@@ -1,21 +1,28 @@
-from sqlalchemy import create_engine
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker
+import firebase_admin
+from firebase_admin import credentials
+from firebase_admin import firestore
+import os
 
-SQLALCHEMY_DATABASE_URL = "sqlite:///./trackify.db"
-# If using MySQL: "mysql+pymysql://user:password@localhost/dbname"
+# Initialize Firebase Admin
+try:
+    # Resolve the absolute path of the directory containing this script
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    key_path = os.path.join(base_dir, "serviceAccountKey.json")
+    
+    # Check if a specific service account key file exists
+    if os.path.exists(key_path):
+        cred = credentials.Certificate(key_path)
+        firebase_admin.initialize_app(cred)
+    else:
+        # Fallback to application default credentials
+        firebase_admin.initialize_app()
+except ValueError:
+    # App already initialized (e.g., in hot-reloading)
+    pass
 
-engine = create_engine(
-    SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False}
-)
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-
-Base = declarative_base()
+# Initialize Firestore client
+db_client = firestore.client()
 
 # Dependency
 def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
+    return db_client

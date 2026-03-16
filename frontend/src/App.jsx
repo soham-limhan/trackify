@@ -6,16 +6,21 @@ import Dashboard from './components/Dashboard';
 
 function App() {
   return (
-    <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
-        <Route path="/dashboard" element={<Dashboard />} />
-      </Routes>
-    </BrowserRouter>
-
+    <>
+      {/* Global animated CSS gradient background — sits behind everything */}
+      <div className="fixed inset-0 z-[-10] animated-gradient-bg">
+      </div>
+      <BrowserRouter>
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
+          <Route path="/dashboard" element={<Dashboard />} />
+        </Routes>
+      </BrowserRouter>
+    </>
   );
 }
 
 export default App;
+

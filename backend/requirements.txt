@@ -1,9 +1,10 @@
 fastapi
 uvicorn[standard]
-sqlalchemy
+firebase-admin
 passlib[bcrypt]
 python-jose[cryptography]
 google-auth
 pydantic
 pydantic-settings
 python-multipart
+PyPDF2
