@@ -1,4 +1,4 @@
-<![CDATA[<div align="center">
+<div align="center">
 
 # 💰 Trackify
 
@@ -87,13 +87,18 @@ TrackifyV2/
 ├── frontend/
 │   ├── src/
 │   │   ├── App.jsx             # React Router setup
+│   │   ├── App.css             # App-level styles
 │   │   ├── main.jsx            # React entry point
 │   │   ├── index.css           # Global styles + animated gradient
 │   │   └── components/
 │   │       ├── Home.jsx        # Landing page
 │   │       ├── Login.jsx       # Login page (email + Google)
 │   │       ├── Register.jsx    # Registration page
-│   │       └── Dashboard.jsx   # Main dashboard with all features
+│   │       ├── Dashboard.jsx   # Main dashboard with all features
+│   │       ├── ColorBends.jsx  # Animated color bends background effect
+│   │       ├── ColorBends.css  # Color bends styles
+│   │       ├── LightPillar.jsx # Light pillar visual effect
+│   │       └── LightPillar.css # Light pillar styles
 │   ├── package.json            # Node dependencies
 │   ├── vite.config.js          # Vite configuration
 │   ├── tailwind.config.js      # TailwindCSS configuration
@@ -249,4 +254,4 @@ This project is licensed under the ISC License. See the `package.json` for detai
 **Built with ❤️ by [Soham Limhan](https://github.com/soham-limhan)**
 
 </div>
-]]>
+
