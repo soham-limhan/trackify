@@ -7,7 +7,7 @@ import os
 try:
     # Resolve the absolute path of the directory containing this script
     base_dir = os.path.dirname(os.path.abspath(__file__))
-    key_path = os.path.join(base_dir, "serviceAccountKey.json")
+    key_path = os.path.join(base_dir, "serviceAccountkey.json")
     
     # Check if a specific service account key file exists
     if os.path.exists(key_path):

@@ -8,3 +8,5 @@ pydantic
 pydantic-settings
 python-multipart
 PyPDF2
+pandas
+openpyxl

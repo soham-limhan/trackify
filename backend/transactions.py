@@ -1,9 +1,13 @@
-from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File
+from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Response
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from typing import List, Optional, Dict
 from datetime import datetime, timezone
 import re
 import io
+import csv
+import openpyxl
+from openpyxl.styles import Font
 import PyPDF2
 from google.cloud import firestore
 import database
@@ -44,6 +48,27 @@ class AnalyticsSummary(BaseModel):
     total_expenses: float
     expenses_by_category: Dict[str, float]
 
+class RecurringExpenseCreate(BaseModel):
+    amount: float
+    category: str
+    description: Optional[str] = None
+    day_of_month: int # 1-31
+    total_months: int
+
+class RecurringExpenseResponse(BaseModel):
+    id: str
+    amount: float
+    category: str
+    description: Optional[str]
+    day_of_month: int
+    total_months: int
+    months_paid: int
+    next_deduction_date: datetime
+    status: str # 'active', 'completed'
+    
+    class Config:
+        from_attributes = True
+
 @router.post("/", response_model=TransactionResponse)
 def add_transaction(transaction: TransactionCreate, db: firestore.Client = Depends(database.get_db), current_user: User = Depends(get_current_user)):
     if transaction.type not in ['income', 'expense']:
@@ -60,7 +85,11 @@ def add_transaction(transaction: TransactionCreate, db: firestore.Client = Depen
 
 @router.get("/", response_model=List[TransactionResponse])
 def get_transactions(db: firestore.Client = Depends(database.get_db), current_user: User = Depends(get_current_user)):
-    transactions_ref = db.collection('transactions').where('user_id', '==', current_user.id).order_by('date', direction=firestore.Query.DESCENDING).stream()
+    # Trigger processing of recurring expenses
+    process_recurring_expenses(db, current_user.id)
+    
+    # Simplified query to avoid composite index requirement
+    transactions_ref = db.collection('transactions').where('user_id', '==', current_user.id).stream()
     
     transactions = []
     for doc in transactions_ref:
@@ -68,6 +97,8 @@ def get_transactions(db: firestore.Client = Depends(database.get_db), current_us
         data['id'] = doc.id
         transactions.append(data)
         
+    # Sort in memory instead
+    transactions.sort(key=lambda x: x.get('date'), reverse=True)
     return transactions
 
 @router.post("/budget", response_model=BudgetResponse)
@@ -98,6 +129,9 @@ def get_budget(db: firestore.Client = Depends(database.get_db), current_user: Us
 
 @router.get("/analytics", response_model=AnalyticsSummary)
 def get_analytics(db: firestore.Client = Depends(database.get_db), current_user: User = Depends(get_current_user)):
+    # Trigger processing of recurring expenses
+    process_recurring_expenses(db, current_user.id)
+    
     transactions_ref = db.collection('transactions').where('user_id', '==', current_user.id).stream()
     
     total_income = 0.0
@@ -234,3 +268,204 @@ async def upload_statement(
     except Exception as e:
         print(f"Error parsing PDF: {e}")
         raise HTTPException(status_code=500, detail="Failed to process statement PDF")
+
+@router.get("/export/csv")
+def export_csv(db: firestore.Client = Depends(database.get_db), current_user: User = Depends(get_current_user)):
+    transactions_ref = db.collection('transactions').where('user_id', '==', current_user.id).stream()
+    
+    # We create an in-memory string buffer for the CSV
+    output = io.StringIO()
+    writer = csv.writer(output)
+    
+    # Header
+    writer.writerow(['Date', 'Amount', 'Type', 'Category', 'Description'])
+    
+    transactions = []
+    for doc in transactions_ref:
+        data = doc.to_dict()
+        transactions.append(data)
+    
+    # Sort by date descending
+    transactions.sort(key=lambda x: x.get('date'), reverse=True)
+    
+    for t in transactions:
+        date_str = t.get('date').strftime('%Y-%m-%d %H:%M:%S') if t.get('date') else 'N/A'
+        writer.writerow([
+            date_str,
+            t.get('amount', 0),
+            t.get('type', 'N/A'),
+            t.get('category', 'N/A'),
+            t.get('description', '')
+        ])
+    
+    output.seek(0)
+    return StreamingResponse(
+        iter([output.getvalue()]),
+        media_type="text/csv",
+        headers={"Content-Disposition": f"attachment; filename=trackify_transactions_{datetime.now().strftime('%Y%m%d')}.csv"}
+    )
+
+@router.get("/export/excel")
+def export_excel(db: firestore.Client = Depends(database.get_db), current_user: User = Depends(get_current_user)):
+    transactions_ref = db.collection('transactions').where('user_id', '==', current_user.id).stream()
+    
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "Transactions"
+    
+    # Header
+    headers = ['Date', 'Amount', 'Type', 'Category', 'Description']
+    ws.append(headers)
+    
+    # Style Header
+    for cell in ws[1]:
+        cell.font = Font(bold=True)
+    
+    transactions = []
+    for doc in transactions_ref:
+        data = doc.to_dict()
+        transactions.append(data)
+    
+    # Sort by date descending
+    transactions.sort(key=lambda x: x.get('date'), reverse=True)
+    
+    for t in transactions:
+        date_val = t.get('date').replace(tzinfo=None) if t.get('date') else 'N/A'
+        ws.append([
+            date_val,
+            t.get('amount', 0),
+            t.get('type', 'N/A'),
+            t.get('category', 'N/A'),
+            t.get('description', '')
+        ])
+        
+    # Auto-adjust column width
+    for column in ws.columns:
+        max_length = 0
+        column_letter = column[0].column_letter
+        for cell in column:
+            try:
+                if len(str(cell.value)) > max_length:
+                    max_length = len(str(cell.value))
+            except:
+                pass
+        ws.column_dimensions[column_letter].width = max_length + 2
+
+    # Save to memory
+    excel_file = io.BytesIO()
+    wb.save(excel_file)
+    excel_file.seek(0)
+    
+    return Response(
+        content=excel_file.getvalue(),
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f"attachment; filename=trackify_transactions_{datetime.now().strftime('%Y%m%d')}.xlsx"}
+    )
+
+# --- Recurring Expenses Logic ---
+
+def get_next_month_date(date: datetime, day_of_month: int):
+    # Move to the next month
+    if date.month == 12:
+        next_month = 1
+        next_year = date.year + 1
+    else:
+        next_month = date.month + 1
+        next_year = date.year
+
+    # Handle months with fewer days (e.g. Feb 30)
+    import calendar
+    last_day = calendar.monthrange(next_year, next_month)[1]
+    actual_day = min(day_of_month, last_day)
+    
+    return datetime(next_year, next_month, actual_day, tzinfo=timezone.utc)
+
+def process_recurring_expenses(db: firestore.Client, user_id: str):
+    now = datetime.now(timezone.utc)
+    recurring_ref = db.collection('recurring_expenses').where('user_id', '==', user_id).where('status', '==', 'active').stream()
+    
+    batch = db.batch()
+    for doc in recurring_ref:
+        re = doc.to_dict()
+        re['id'] = doc.id
+        
+        while now >= re['next_deduction_date'] and re['months_paid'] < re['total_months']:
+            # Create Transaction
+            trans_ref = db.collection('transactions').document()
+            batch.set(trans_ref, {
+                'user_id': user_id,
+                'amount': re['amount'],
+                'type': 'expense',
+                'category': re['category'],
+                'description': f"{re['description']} (EMI {re['months_paid'] + 1}/{re['total_months']})",
+                'date': re['next_deduction_date'],
+                'is_recurring': True
+            })
+            
+            # Update Recurring Record
+            re['months_paid'] += 1
+            re['next_deduction_date'] = get_next_month_date(re['next_deduction_date'], re['day_of_month'])
+            
+            if re['months_paid'] >= re['total_months']:
+                re['status'] = 'completed'
+                break
+        
+        # Update the recurring expense doc
+        batch.update(doc.reference, {
+            'months_paid': re['months_paid'],
+            'next_deduction_date': re['next_deduction_date'],
+            'status': re['status']
+        })
+        
+    batch.commit()
+
+@router.post("/recurring", response_model=RecurringExpenseResponse)
+def add_recurring_expense(re_data: RecurringExpenseCreate, db: firestore.Client = Depends(database.get_db), current_user: User = Depends(get_current_user)):
+    now = datetime.now(timezone.utc)
+    
+    # Calculate initial next_deduction_date
+    # If today's day is already past day_of_month, start from next month
+    # Otherwise, start from this month
+    if now.day > re_data.day_of_month:
+        # Start next month
+        import calendar
+        next_month = now.month + 1 if now.month < 12 else 1
+        year = now.year if now.month < 12 else now.year + 1
+        last_day = calendar.monthrange(year, next_month)[1]
+        start_date = datetime(year, next_month, min(re_data.day_of_month, last_day), tzinfo=timezone.utc)
+    else:
+        # Start this month
+        start_date = datetime(now.year, now.month, re_data.day_of_month, tzinfo=timezone.utc)
+        
+    new_re = {
+        'user_id': current_user.id,
+        'amount': re_data.amount,
+        'category': re_data.category,
+        'description': re_data.description,
+        'day_of_month': re_data.day_of_month,
+        'total_months': re_data.total_months,
+        'months_paid': 0,
+        'next_deduction_date': start_date,
+        'status': 'active',
+        'created_at': now
+    }
+    
+    update_time, doc_ref = db.collection('recurring_expenses').add(new_re)
+    new_re['id'] = doc_ref.id
+    return new_re
+
+@router.get("/recurring", response_model=List[RecurringExpenseResponse])
+def get_recurring_expenses(db: firestore.Client = Depends(database.get_db), current_user: User = Depends(get_current_user)):
+    # Trigger processing first
+    process_recurring_expenses(db, current_user.id)
+    
+    recurring_ref = db.collection('recurring_expenses').where('user_id', '==', current_user.id).stream()
+    result = []
+    for doc in recurring_ref:
+        data = doc.to_dict()
+        data['id'] = doc.id
+        result.append(data)
+    
+    # Sort by created_at descending
+    result.sort(key=lambda x: x.get('created_at', datetime.min.replace(tzinfo=timezone.utc)), reverse=True)
+    return result

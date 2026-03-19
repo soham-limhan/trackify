@@ -8,6 +8,9 @@ import {
     LineChart, Line, AreaChart, Area, ComposedChart,
     RadialBarChart, RadialBar
 } from 'recharts';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
+import html2canvas from 'html2canvas';
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d', '#ffc658'];
 
@@ -32,6 +35,13 @@ export default function Dashboard() {
 
     // UI States
     const [scrolled, setScrolled] = useState(0);
+    const [recurringExpenses, setRecurringExpenses] = useState([]);
+    const [showRecurringForm, setShowRecurringForm] = useState(false);
+    const [reAmount, setReAmount] = useState('');
+    const [reCategory, setReCategory] = useState('');
+    const [reDescription, setReDescription] = useState('');
+    const [reDay, setReDay] = useState(5);
+    const [reMonths, setReMonths] = useState(12);
 
     // Clock State
     const [clockTime, setClockTime] = useState('');
@@ -90,15 +100,17 @@ export default function Dashboard() {
 
     const fetchData = async () => {
         try {
-            const [userRes, transRes, analyticsRes, budgetRes] = await Promise.all([
+            const [userRes, transRes, analyticsRes, budgetRes, recurringRes] = await Promise.all([
                 axiosInstance.get('/auth/me'),
                 axiosInstance.get('/transactions/'),
                 axiosInstance.get('/transactions/analytics'),
-                axiosInstance.get('/transactions/budget') // Wait on budget
+                axiosInstance.get('/transactions/budget'),
+                axiosInstance.get('/transactions/recurring')
             ]);
             setUser(userRes.data);
             setTransactions(transRes.data);
             setAnalytics(analyticsRes.data);
+            setRecurringExpenses(recurringRes.data);
             if (budgetRes.data) {
                 setBudget(budgetRes.data.limit_amount);
             }
@@ -141,10 +153,33 @@ export default function Dashboard() {
             setAmount('');
             setCategory('');
             setDescription('');
-            // Refresh data
             fetchData();
         } catch (error) {
             console.error("Error adding transaction", error);
+        }
+    };
+
+    const handleRecurringSubmit = async (e) => {
+        e.preventDefault();
+        try {
+            await axiosInstance.post('/transactions/recurring', {
+                amount: parseFloat(reAmount),
+                category: reCategory,
+                description: reDescription,
+                day_of_month: parseInt(reDay),
+                total_months: parseInt(reMonths)
+            });
+            // Reset form
+            setReAmount('');
+            setReCategory('');
+            setReDescription('');
+            setReDay(5);
+            setReMonths(12);
+            setShowRecurringForm(false);
+            fetchData();
+        } catch (error) {
+            console.error("Error adding recurring expense", error);
+            alert("Failed to add EMI. Please check details.");
         }
     };
 
@@ -210,6 +245,101 @@ export default function Dashboard() {
         opacity: scrolled,
         transition: 'opacity 0.3s ease-out',
         transform: `translateY(${(1 - scrolled) * 20}px)`,
+    };
+
+    const dashboardRef = useRef(null);
+
+    const handleExportCSV = () => {
+        window.open('http://localhost:8000/api/transactions/export/csv?token=' + localStorage.getItem('token'), '_blank');
+        // Actually, since we use axios with headers, it's better to fetch and download
+        fetchExport('/transactions/export/csv', `trackify_transactions_${new Date().toISOString().split('T')[0]}.csv`);
+    };
+
+    const handleExportExcel = () => {
+        fetchExport('/transactions/export/excel', `trackify_transactions_${new Date().toISOString().split('T')[0]}.xlsx`);
+    };
+
+    const fetchExport = async (url, filename) => {
+        try {
+            const response = await axiosInstance.get(url, { responseType: 'blob' });
+            const downloadUrl = window.URL.createObjectURL(new Blob([response.data]));
+            const link = document.createElement('a');
+            link.href = downloadUrl;
+            link.setAttribute('download', filename);
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+        } catch (error) {
+            console.error("Export failed", error);
+            alert("Export failed. Please try again.");
+        }
+    };
+
+    const handleExportPDF = async () => {
+        if (!dashboardRef.current) return;
+
+        const pdf = new jsPDF('p', 'mm', 'a4');
+        const pdfWidth = pdf.internal.pageSize.getWidth();
+        const pdfHeight = pdf.internal.pageSize.getHeight();
+
+        pdf.setFontSize(22);
+        pdf.setTextColor(40, 40, 40);
+        pdf.text('Trackify Financial Report', 14, 20);
+
+        pdf.setFontSize(10);
+        pdf.text(`Generated on: ${new Date().toLocaleString()}`, 14, 28);
+        pdf.text(`User: ${user?.full_name || 'Valued User'}`, 14, 33);
+
+        // Add Summary
+        pdf.setFontSize(14);
+        pdf.text('Summary', 14, 45);
+        pdf.setFontSize(10);
+        pdf.text(`Total Income: ${formatCurrency(analytics?.total_income)}`, 14, 52);
+        pdf.text(`Total Expenses: ${formatCurrency(analytics?.total_expenses)}`, 14, 57);
+        pdf.text(`Net Savings: ${formatCurrency(analytics?.total_income - analytics?.total_expenses)}`, 14, 62);
+
+        // Capture charts
+        try {
+            const chartsElement = document.getElementById('charts-to-capture');
+            if (chartsElement) {
+                const canvas = await html2canvas(chartsElement, {
+                    scale: 2,
+                    backgroundColor: '#1e1b4b', // Match the dashboard background
+                    useCORS: true
+                });
+                const imgData = canvas.toDataURL('image/png');
+                const imgWidth = pdfWidth - 28;
+                const imgHeight = (canvas.height * imgWidth) / canvas.width;
+
+                pdf.addImage(imgData, 'PNG', 14, 70, imgWidth, imgHeight);
+
+                // Add transactions table on a new page if needed
+                pdf.addPage();
+                pdf.setFontSize(14);
+                pdf.text('Transaction Details', 14, 20);
+
+                const tableData = transactions.map(t => [
+                    new Date(t.date).toLocaleDateString(),
+                    t.amount.toFixed(2),
+                    t.type,
+                    t.category,
+                    t.description || ''
+                ]);
+
+                autoTable(pdf, {
+                    startY: 30,
+                    head: [['Date', 'Amount (₹)', 'Type', 'Category', 'Description']],
+                    body: tableData,
+                    theme: 'striped',
+                    headStyles: { fillColor: [99, 102, 241] }
+                });
+
+                pdf.save(`trackify_report_${new Date().toISOString().split('T')[0]}.pdf`);
+            }
+        } catch (error) {
+            console.error("PDF generation failed", error);
+            alert("Failed to generate PDF report.");
+        }
     };
 
     // Data prep for charts
@@ -301,6 +431,29 @@ export default function Dashboard() {
                 )}
 
                 <div className="flex items-center gap-4">
+                    <div className="hidden lg:flex items-center gap-2 border-r border-white/20 pr-4 mr-2">
+                        <button
+                            onClick={handleExportPDF}
+                            className="flex items-center gap-2 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-lg transition-all shadow-sm"
+                            title="Download PDF Report"
+                        >
+                            PDF
+                        </button>
+                        <button
+                            onClick={handleExportExcel}
+                            className="flex items-center gap-2 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-lg transition-all shadow-sm"
+                            title="Export to Excel"
+                        >
+                            Excel
+                        </button>
+                        <button
+                            onClick={handleExportCSV}
+                            className="flex items-center gap-2 px-3 py-1.5 bg-slate-600 hover:bg-slate-700 text-white text-xs font-bold rounded-lg transition-all shadow-sm"
+                            title="Export to CSV"
+                        >
+                            CSV
+                        </button>
+                    </div>
                     <button
                         onClick={handleResetData}
                         className="flex items-center gap-2 px-4 py-2 bg-white/10/10 hover:bg-red-50 hover:text-red-600 text-white font-bold rounded-lg border border-white/80 transition-all shadow-sm hover:shadow"
@@ -319,7 +472,7 @@ export default function Dashboard() {
                 </div>
             </header>
 
-            <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+            <main ref={dashboardRef} className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
                 {/* Hero Section with Parallax Effect */}
                 <div className="relative h-[40vh] min-h-[300px] flex items-center mb-12 pointer-events-none">
                     <div
@@ -413,7 +566,7 @@ export default function Dashboard() {
                                         step="0.01"
                                         value={amount}
                                         onChange={(e) => setAmount(e.target.value)}
-                                        className="w-full px-4 py-3 rounded-xl border-none bg-white/10/5 focus:ring-2 focus:ring-brand/50 font-medium"
+                                        className="w-full px-4 py-3 rounded-xl border-none bg-slate-900/60 focus:ring-2 focus:ring-brand/50 font-medium text-slate-100 placeholder-slate-400"
                                         placeholder="0.00"
                                     />
                                 </div>
@@ -424,7 +577,7 @@ export default function Dashboard() {
                                         required
                                         value={category}
                                         onChange={(e) => setCategory(e.target.value)}
-                                        className="w-full px-4 py-3 rounded-xl border-none bg-white/10/5 focus:ring-2 focus:ring-brand/50 font-medium"
+                                        className="w-full px-4 py-3 rounded-xl border-none bg-slate-900/60 focus:ring-2 focus:ring-brand/50 font-medium text-slate-100 placeholder-slate-400"
                                         placeholder={type === 'income' ? 'e.g. Salary, Freelance' : 'e.g. Groceries, Rent'}
                                     />
                                 </div>
@@ -434,7 +587,7 @@ export default function Dashboard() {
                                         type="text"
                                         value={description}
                                         onChange={(e) => setDescription(e.target.value)}
-                                        className="w-full px-4 py-3 rounded-xl border-none bg-white/10/5 focus:ring-2 focus:ring-brand/50 font-medium"
+                                        className="w-full px-4 py-3 rounded-xl border-none bg-slate-900/60 focus:ring-2 focus:ring-brand/50 font-medium text-slate-100 placeholder-slate-400"
                                         placeholder="Optional notes"
                                     />
                                 </div>
@@ -445,54 +598,173 @@ export default function Dashboard() {
                             </form>
                         </div>
 
-                        {/* Budget Form */}
-                        <div className="glass rounded-3xl p-8 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-white/60 bg-gradient-to-br from-indigo-50/50 to-purple-50/50">
-                            <h3 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
-                                <Target className="text-purple-600" size={24} /> Set Debit Limit
-                            </h3>
-                            <form onSubmit={handleBudgetSubmit} className="space-y-4">
-                                <div>
-                                    <label className="block text-xs font-bold text-white/70 mb-1 uppercase tracking-wider">Monthly Budget (₹)</label>
-                                    <input
-                                        type="number"
-                                        required
-                                        min="1"
-                                        value={budgetLimit}
-                                        onChange={(e) => setBudgetLimit(e.target.value)}
-                                        className="w-full px-4 py-3 rounded-xl border-none bg-white/10/5 focus:ring-2 focus:ring-purple-500/50 font-medium"
-                                        placeholder={budget ? formatCurrency(budget) : "0.00"}
-                                    />
-                                </div>
-                                <button type="submit" className="w-full py-3 rounded-xl font-bold text-white bg-purple-600 hover:bg-purple-700 shadow-lg shadow-purple-600/30 transform transition hover:-translate-y-0.5">
-                                    {budget ? 'Update Limit' : 'Set Limit'}
-                                </button>
-                            </form>
-                        </div>
-
-                        {/* Statement Upload */}
+                        {/* Recurring Expenses (EMI) Form */}
                         <div className="glass rounded-3xl p-8 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-white/60">
-                            <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
-                                <UploadCloud className="text-blue-500" size={24} /> Smart Import
-                            </h3>
-                            <p className="text-sm text-white/70 font-medium mb-6">Upload your bank statement PDF to automatically log your transactions.</p>
-
-                            <div className="relative group cursor-pointer border-2 border-dashed border-slate-300 rounded-2xl p-6 text-center hover:bg-slate-50/50 hover:border-blue-400 transition-colors" onClick={() => fileInputRef.current?.click()}>
-                                <input
-                                    type="file"
-                                    ref={fileInputRef}
-                                    onChange={handleFileUpload}
-                                    accept="application/pdf"
-                                    className="hidden"
-                                />
-                                <UploadCloud className={`mx-auto mb-3 ${uploading ? 'text-blue-500 animate-bounce' : 'text-white/70 group-hover:text-blue-500'}`} size={32} />
-                                <p className="text-sm font-bold text-white/90">
-                                    {uploading ? 'Processing Statement...' : 'Click to Upload PDF'}
-                                </p>
+                            <div className="flex items-center justify-between mb-6">
+                                <h3 className="text-xl font-bold text-white flex items-center gap-2">
+                                    <Clock className="text-indigo-400" size={24} /> Recurring EMI
+                                </h3>
+                                <button
+                                    onClick={() => setShowRecurringForm(!showRecurringForm)}
+                                    className="text-xs font-bold text-indigo-400 hover:text-indigo-300"
+                                >
+                                    {showRecurringForm ? 'Cancel' : '+ Add New'}
+                                </button>
                             </div>
 
-                            {uploadMsg && (
-                                <div className={`mt-4 p-3 rounded-xl text-sm font-bold text-center ${uploadMsg.includes('Success') ? 'bg-emerald-50 text-emerald-600' : 'bg-blue-50 text-blue-600'}`}>
-                                    {uploadMsg}
+                            {showRecurringForm ? (
+                                <form onSubmit={handleRecurringSubmit} className="space-y-4">
+                                    <div>
+                                        <label className="block text-xs font-bold text-white/70 mb-1 uppercase tracking-wider">EMI Amount (₹)</label>
+                                        <input
+                                            type="number"
+                                            required
+                                            value={reAmount}
+                                            onChange={(e) => setReAmount(e.target.value)}
+                                            className="w-full px-4 py-3 rounded-xl border-none bg-slate-900/60 focus:ring-2 focus:ring-brand/50 font-medium text-slate-100 placeholder-slate-400"
+                                            placeholder="Monthly amount"
+                                        />
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="block text-xs font-bold text-white/70 mb-1 uppercase tracking-wider">Day of Month</label>
+                                            <input
+                                                type="number"
+                                                min="1"
+                                                max="31"
+                                                required
+                                                value={reDay}
+                                                onChange={(e) => setReDay(e.target.value)}
+                                                className="w-full px-4 py-3 rounded-xl border-none bg-slate-900/60 focus:ring-2 focus:ring-brand/50 font-medium text-slate-100"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs font-bold text-white/70 mb-1 uppercase tracking-wider">Total Months</label>
+                                            <input
+                                                type="number"
+                                                min="1"
+                                                required
+                                                value={reMonths}
+                                                onChange={(e) => setReMonths(e.target.value)}
+                                                className="w-full px-4 py-3 rounded-xl border-none bg-slate-900/60 focus:ring-2 focus:ring-brand/50 font-medium text-slate-100"
+                                            />
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs font-bold text-white/70 mb-1 uppercase tracking-wider">Category</label>
+                                        <input
+                                            type="text"
+                                            required
+                                            value={reCategory}
+                                            onChange={(e) => setReCategory(e.target.value)}
+                                            className="w-full px-4 py-3 rounded-xl border-none bg-slate-900/60 focus:ring-2 focus:ring-brand/50 font-medium text-slate-100 placeholder-slate-400"
+                                            placeholder="e.g. Home Loan, Car EMI"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs font-bold text-white/70 mb-1 uppercase tracking-wider">Description</label>
+                                        <input
+                                            type="text"
+                                            value={reDescription}
+                                            onChange={(e) => setReDescription(e.target.value)}
+                                            className="w-full px-4 py-3 rounded-xl border-none bg-slate-900/60 focus:ring-2 focus:ring-brand/50 font-medium text-slate-100 placeholder-slate-400"
+                                            placeholder="Optional details"
+                                        />
+                                    </div>
+                                    <button type="submit" className="w-full py-3 bg-indigo-500 hover:bg-indigo-600 rounded-xl font-bold text-white shadow-lg shadow-indigo-500/30 transform transition hover:-translate-y-0.5">
+                                        Set Recurring EMI
+                                    </button>
+                                </form>
+                            ) : (
+                                <p className="text-sm text-white/50 italic">Setup an EMI to automatically track monthly deductions.</p>
+                            )}
+
+                            {/* Budget Form */}
+                            <div className="glass rounded-3xl p-8 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-white/60 bg-gradient-to-br from-indigo-50/50 to-purple-50/50">
+                                <h3 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
+                                    <Target className="text-purple-600" size={24} /> Set Debit Limit
+                                </h3>
+                                <form onSubmit={handleBudgetSubmit} className="space-y-4">
+                                    <div>
+                                        <label className="block text-xs font-bold text-white/70 mb-1 uppercase tracking-wider">Monthly Budget (₹)</label>
+                                        <input
+                                            type="number"
+                                            required
+                                            min="1"
+                                            value={budgetLimit}
+                                            onChange={(e) => setBudgetLimit(e.target.value)}
+                                            className="w-full px-4 py-3 rounded-xl border-none bg-slate-900/60 focus:ring-2 focus:ring-purple-500/50 font-medium text-slate-100 placeholder-slate-400"
+                                            placeholder={budget ? formatCurrency(budget) : "0.00"}
+                                        />
+                                    </div>
+                                    <button type="submit" className="w-full py-3 rounded-xl font-bold text-white bg-purple-600 hover:bg-purple-700 shadow-lg shadow-purple-600/30 transform transition hover:-translate-y-0.5">
+                                        {budget ? 'Update Limit' : 'Set Limit'}
+                                    </button>
+                                </form>
+                            </div>
+
+                            {/* Statement Upload */}
+                            <div className="glass rounded-3xl p-8 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-white/60">
+                                <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
+                                    <UploadCloud className="text-blue-500" size={24} /> Smart Import
+                                </h3>
+                                <p className="text-sm text-white/70 font-medium mb-6">Upload your bank statement PDF to automatically log your transactions.</p>
+
+                                <div className="relative group cursor-pointer border-2 border-dashed border-slate-300 rounded-2xl p-6 text-center hover:bg-slate-50/50 hover:border-blue-400 transition-colors" onClick={() => fileInputRef.current?.click()}>
+                                    <input
+                                        type="file"
+                                        ref={fileInputRef}
+                                        onChange={handleFileUpload}
+                                        accept="application/pdf"
+                                        className="hidden"
+                                    />
+                                    <UploadCloud className={`mx-auto mb-3 ${uploading ? 'text-blue-500 animate-bounce' : 'text-white/70 group-hover:text-blue-500'}`} size={32} />
+                                    <p className="text-sm font-bold text-white/90">
+                                        {uploading ? 'Processing Statement...' : 'Click to Upload PDF'}
+                                    </p>
+                                </div>
+
+                                {uploadMsg && (
+                                    <div className={`mt-4 p-3 rounded-xl text-sm font-bold text-center ${uploadMsg.includes('Success') ? 'bg-emerald-50 text-emerald-600' : 'bg-blue-50 text-blue-600'}`}>
+                                        {uploadMsg}
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Active EMIs List */}
+                            {recurringExpenses.length > 0 && (
+                                <div className="glass rounded-3xl p-8 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-white/60">
+                                    <h3 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
+                                        <Clock className="text-indigo-400" size={24} /> Active EMIs
+                                    </h3>
+                                    <div className="space-y-4">
+                                        {recurringExpenses.map((re) => (
+                                            <div key={re.id} className="p-4 bg-white/5 rounded-2xl border border-white/10">
+                                                <div className="flex justify-between items-start mb-2">
+                                                    <div>
+                                                        <h4 className="font-bold text-white">{re.category}</h4>
+                                                        <p className="text-xs text-white/60">{re.description}</p>
+                                                    </div>
+                                                    <span className={`px-2 py-0.5 text-[10px] font-black uppercase rounded ${re.status === 'active' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-white/10 text-white/40'}`}>
+                                                        {re.status}
+                                                    </span>
+                                                </div>
+                                                <div className="flex justify-between items-end mt-4">
+                                                    <div className="text-xs font-bold text-white/70">
+                                                        <p>Progress: {re.months_paid}/{re.total_months} months</p>
+                                                        <p className="mt-1 text-[10px]">Next: {new Date(re.next_deduction_date).toLocaleDateString()}</p>
+                                                    </div>
+                                                    <p className="text-lg font-black text-white">{formatCurrency(re.amount)}</p>
+                                                </div>
+                                                <div className="h-1.5 w-full bg-white/10 rounded-full mt-3 overflow-hidden">
+                                                    <div
+                                                        className="h-full bg-indigo-500"
+                                                        style={{ width: `${(re.months_paid / re.total_months) * 100}%` }}
+                                                    ></div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
                                 </div>
                             )}
                         </div>
@@ -500,197 +772,197 @@ export default function Dashboard() {
 
                     {/* Visualizations & History */}
                     <div className="lg:col-span-2 space-y-8">
-                        {/* Visualizations Container */}
-                        <div className="glass rounded-3xl p-8 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-white/60">
-                            <h3 className="text-2xl font-black text-white mb-8 tracking-tight">Financial Insights</h3>
+                            {/* Visualizations Container */}
+                            <div id="charts-to-capture" className="glass rounded-3xl p-8 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-white/60">
+                                <h3 className="text-2xl font-black text-white mb-8 tracking-tight">Financial Insights</h3>
 
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                                {/* Summary Bar Chart */}
-                                <div className="h-64 flex flex-col items-center">
-                                    <h4 className="text-sm font-bold text-white/70 mb-4 uppercase tracking-wider">Income vs Expenses</h4>
-                                    <ResponsiveContainer width="100%" height="80%">
-                                        <BarChart data={barData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-                                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-                                            <XAxis dataKey="name" tick={{ fill: '#f8fafc', fontSize: 12, fontWeight: 700 }} axisLine={false} tickLine={false} />
-                                            <YAxis tickFormatter={(val) => `₹${val / 1000}k`} tick={{ fill: '#f8fafc', fontSize: 12 }} axisLine={false} tickLine={false} />
-                                            <Tooltip
-                                                formatter={(value) => formatCurrency(value)}
-                                                contentStyle={{ borderRadius: '1rem', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)', padding: '12px' }}
-                                            />
-                                            <Bar dataKey="amount" radius={[8, 8, 0, 0]}>
-                                                {barData.map((entry, index) => (
-                                                    <Cell key={`cell-${index}`} fill={entry.name === 'Income' ? '#10b981' : entry.name === 'Expenses' ? '#ef4444' : '#3b82f6'} />
-                                                ))}
-                                            </Bar>
-                                        </BarChart>
-                                    </ResponsiveContainer>
-                                </div>
-
-                                {/* Category Pie Chart */}
-                                <div className="h-64 flex flex-col items-center">
-                                    <h4 className="text-sm font-bold text-white/70 mb-4 uppercase tracking-wider">Expenses by Category</h4>
-                                    {pieData.length > 0 ? (
-                                        <ResponsiveContainer width={200} height={200}>
-                                            <PieChart>
-                                                <Pie
-                                                    data={pieData}
-                                                    cx="50%"
-                                                    cy="50%"
-                                                    innerRadius={50}
-                                                    outerRadius={70}
-                                                    paddingAngle={5}
-                                                    dataKey="value"
-                                                >
-                                                    {pieData.map((entry, index) => (
-                                                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                    {/* Summary Bar Chart */}
+                                    <div className="h-64 flex flex-col items-center">
+                                        <h4 className="text-sm font-bold text-white/70 mb-4 uppercase tracking-wider">Income vs Expenses</h4>
+                                        <ResponsiveContainer width="100%" height="80%">
+                                            <BarChart data={barData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                                                <XAxis dataKey="name" tick={{ fill: '#f8fafc', fontSize: 12, fontWeight: 700 }} axisLine={false} tickLine={false} />
+                                                <YAxis tickFormatter={(val) => `₹${val / 1000}k`} tick={{ fill: '#f8fafc', fontSize: 12 }} axisLine={false} tickLine={false} />
+                                                <Tooltip
+                                                    formatter={(value) => formatCurrency(value)}
+                                                    contentStyle={{ borderRadius: '1rem', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)', padding: '12px' }}
+                                                />
+                                                <Bar dataKey="amount" radius={[8, 8, 0, 0]}>
+                                                    {barData.map((entry, index) => (
+                                                        <Cell key={`cell-${index}`} fill={entry.name === 'Income' ? '#10b981' : entry.name === 'Expenses' ? '#ef4444' : '#3b82f6'} />
                                                     ))}
-                                                </Pie>
-                                                <Tooltip formatter={(value) => formatCurrency(value)} />
-                                            </PieChart>
+                                                </Bar>
+                                            </BarChart>
                                         </ResponsiveContainer>
-                                    ) : (
-                                        <div className="flex-1 flex items-center justify-center text-white/70 font-medium text-sm">
-                                            No expense data yet
-                                        </div>
-                                    )}
-                                    {pieData.length > 0 && <div className="mt-2 text-xs flex gap-2 flex-wrap items-center justify-center">
-                                        {pieData.map((item, i) => (
-                                            <span key={i} className="flex items-center gap-1 font-medium"><div className="w-2 h-2 rounded-full" style={{ backgroundColor: COLORS[i % COLORS.length] }}></div>{item.name}</span>
-                                        ))}
-                                    </div>}
+                                    </div>
+
+                                    {/* Category Pie Chart */}
+                                    <div className="h-64 flex flex-col items-center">
+                                        <h4 className="text-sm font-bold text-white/70 mb-4 uppercase tracking-wider">Expenses by Category</h4>
+                                        {pieData.length > 0 ? (
+                                            <ResponsiveContainer width={200} height={200}>
+                                                <PieChart>
+                                                    <Pie
+                                                        data={pieData}
+                                                        cx="50%"
+                                                        cy="50%"
+                                                        innerRadius={50}
+                                                        outerRadius={70}
+                                                        paddingAngle={5}
+                                                        dataKey="value"
+                                                    >
+                                                        {pieData.map((entry, index) => (
+                                                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                                        ))}
+                                                    </Pie>
+                                                    <Tooltip formatter={(value) => formatCurrency(value)} />
+                                                </PieChart>
+                                            </ResponsiveContainer>
+                                        ) : (
+                                            <div className="flex-1 flex items-center justify-center text-white/70 font-medium text-sm">
+                                                No expense data yet
+                                            </div>
+                                        )}
+                                        {pieData.length > 0 && <div className="mt-2 text-xs flex gap-2 flex-wrap items-center justify-center">
+                                            {pieData.map((item, i) => (
+                                                <span key={i} className="flex items-center gap-1 font-medium"><div className="w-2 h-2 rounded-full" style={{ backgroundColor: COLORS[i % COLORS.length] }}></div>{item.name}</span>
+                                            ))}
+                                        </div>}
+                                    </div>
                                 </div>
                             </div>
-                        </div>
 
-                        {/* Recent Transactions List */}
-                        <div className="glass rounded-3xl p-8 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-white/60">
-                            <h3 className="text-xl font-bold text-white mb-6">Recent Transactions</h3>
+                            {/* Recent Transactions List */}
+                            <div className="glass rounded-3xl p-8 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-white/60">
+                                <h3 className="text-xl font-bold text-white mb-6">Recent Transactions</h3>
 
-                            {transactions.length === 0 ? (
-                                <div className="text-center py-10 border-white/10 rounded-2xl border border-dashed border-slate-300">
-                                    <p className="text-white/70 font-medium">No transactions recorded yet.</p>
-                                </div>
-                            ) : (
-                                <div className="space-y-4">
-                                    {transactions.slice(0, 10).map((t) => (
-                                        <div key={t.id} className="flex items-center justify-between p-4 bg-white/10/5 rounded-2xl hover:bg-white/10/10 transition-colors">
-                                            <div className="flex items-center gap-4">
-                                                <div className={`p-3 rounded-xl ${t.type === 'income' ? 'bg-emerald-100 text-emerald-600' : 'bg-red-100 text-red-600'}`}>
-                                                    {t.type === 'income' ? <PlusCircle size={20} /> : <MinusCircle size={20} />}
+                                {transactions.length === 0 ? (
+                                    <div className="text-center py-10 border-white/10 rounded-2xl border border-dashed border-slate-300">
+                                        <p className="text-white/70 font-medium">No transactions recorded yet.</p>
+                                    </div>
+                                ) : (
+                                    <div className="space-y-4">
+                                        {transactions.slice(0, 10).map((t) => (
+                                            <div key={t.id} className="flex items-center justify-between p-4 bg-white/10/5 rounded-2xl hover:bg-white/10/10 transition-colors">
+                                                <div className="flex items-center gap-4">
+                                                    <div className={`p-3 rounded-xl ${t.type === 'income' ? 'bg-emerald-100 text-emerald-600' : 'bg-red-100 text-red-600'}`}>
+                                                        {t.type === 'income' ? <PlusCircle size={20} /> : <MinusCircle size={20} />}
+                                                    </div>
+                                                    <div>
+                                                        <p className="font-bold text-white">{t.category}</p>
+                                                        <p className="text-xs text-white/70 font-medium">
+                                                            {new Date(t.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+                                                            {t.description && ` • ${t.description}`}
+                                                        </p>
+                                                    </div>
                                                 </div>
-                                                <div>
-                                                    <p className="font-bold text-white">{t.category}</p>
-                                                    <p className="text-xs text-white/70 font-medium">
-                                                        {new Date(t.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
-                                                        {t.description && ` • ${t.description}`}
-                                                    </p>
-                                                </div>
+                                                <p className={`font-black tracking-tight ${t.type === 'income' ? 'text-emerald-600' : 'text-white'}`}>
+                                                    {t.type === 'income' ? '+' : '-'}{formatCurrency(t.amount)}
+                                                </p>
                                             </div>
-                                            <p className={`font-black tracking-tight ${t.type === 'income' ? 'text-emerald-600' : 'text-white'}`}>
-                                                {t.type === 'income' ? '+' : '-'}{formatCurrency(t.amount)}
-                                            </p>
-                                        </div>
-                                    ))}
-                                </div>
-                            )}
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
                         </div>
                     </div>
-                </div>
 
-                {/* ── Extra Analytics Grid ─────────────────────────── */}
-                {transactions.length > 0 && (
-                    <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-8">
+                    {/* ── Extra Analytics Grid ─────────────────────────── */}
+                    {transactions.length > 0 && (
+                        <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-8">
 
-                        {/* Weekly Spending Pattern */}
-                        <div className="glass rounded-3xl p-6 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-white/60">
-                            <h3 className="text-base font-black text-white mb-1 tracking-tight">Weekly Pattern</h3>
-                            <p className="text-xs text-white/70 font-medium mb-4">Expenses by day of week</p>
-                            <ResponsiveContainer width="100%" height={180}>
-                                <BarChart data={weeklyData} margin={{ top: 4, right: 0, left: -28, bottom: 0 }} barCategoryGap="30%">
-                                    <XAxis dataKey="day" tick={{ fill: '#94a3b8', fontSize: 11, fontWeight: 700 }} axisLine={false} tickLine={false} />
-                                    <YAxis hide />
-                                    <Tooltip
-                                        formatter={(v) => [formatCurrency(v), 'Spent']}
-                                        contentStyle={{ borderRadius: '0.75rem', border: 'none', boxShadow: '0 10px 25px rgba(0,0,0,0.1)', padding: '8px 14px', fontSize: 12 }}
-                                    />
-                                    <Bar dataKey="amount" radius={[6, 6, 0, 0]}>
-                                        {weeklyData.map((entry, i) => {
-                                            const max = Math.max(...weeklyData.map(d => d.amount));
-                                            return <Cell key={i} fill={entry.amount === max ? '#ef4444' : '#6366f1'} fillOpacity={entry.amount === max ? 1 : 0.5} />;
-                                        })}
-                                    </Bar>
-                                </BarChart>
-                            </ResponsiveContainer>
-                            <p className="text-[10px] text-center text-white/70 font-semibold mt-1 uppercase tracking-wider">
-                                <span className="inline-flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-red-500 inline-block"></span>Highest spend day</span>
-                            </p>
-                        </div>
-
-                        {/* Top Expense Categories */}
-                        <div className="glass rounded-3xl p-6 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-white/60">
-                            <h3 className="text-base font-black text-white mb-1 tracking-tight">Top Categories</h3>
-                            <p className="text-xs text-white/70 font-medium mb-4">Where your money goes</p>
-                            {topCategories.length > 0 ? (
+                            {/* Weekly Spending Pattern */}
+                            <div className="glass rounded-3xl p-6 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-white/60">
+                                <h3 className="text-base font-black text-white mb-1 tracking-tight">Weekly Pattern</h3>
+                                <p className="text-xs text-white/70 font-medium mb-4">Expenses by day of week</p>
                                 <ResponsiveContainer width="100%" height={180}>
-                                    <BarChart data={topCategories} layout="vertical" margin={{ top: 0, right: 10, left: 0, bottom: 0 }}>
-                                        <XAxis type="number" hide />
-                                        <YAxis type="category" dataKey="name" tick={{ fill: '#f8fafc', fontSize: 11, fontWeight: 600 }} axisLine={false} tickLine={false} width={72} />
+                                    <BarChart data={weeklyData} margin={{ top: 4, right: 0, left: -28, bottom: 0 }} barCategoryGap="30%">
+                                        <XAxis dataKey="day" tick={{ fill: '#94a3b8', fontSize: 11, fontWeight: 700 }} axisLine={false} tickLine={false} />
+                                        <YAxis hide />
                                         <Tooltip
                                             formatter={(v) => [formatCurrency(v), 'Spent']}
                                             contentStyle={{ borderRadius: '0.75rem', border: 'none', boxShadow: '0 10px 25px rgba(0,0,0,0.1)', padding: '8px 14px', fontSize: 12 }}
                                         />
-                                        <Bar dataKey="value" radius={[0, 6, 6, 0]}>
-                                            {topCategories.map((_, i) => (
-                                                <Cell key={i} fill={COLORS[i % COLORS.length]} />
-                                            ))}
+                                        <Bar dataKey="amount" radius={[6, 6, 0, 0]}>
+                                            {weeklyData.map((entry, i) => {
+                                                const max = Math.max(...weeklyData.map(d => d.amount));
+                                                return <Cell key={i} fill={entry.amount === max ? '#ef4444' : '#6366f1'} fillOpacity={entry.amount === max ? 1 : 0.5} />;
+                                            })}
                                         </Bar>
                                     </BarChart>
                                 </ResponsiveContainer>
-                            ) : (
-                                <div className="flex items-center justify-center h-44 text-white/70 text-sm font-medium">No expense data yet</div>
-                            )}
-                        </div>
-
-                        {/* Savings Rate Gauge */}
-                        <div className="glass rounded-3xl p-6 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-white/60 flex flex-col">
-                            <h3 className="text-base font-black text-white mb-1 tracking-tight">Savings Rate</h3>
-                            <p className="text-xs text-white/70 font-medium mb-2">% of income saved</p>
-                            <div className="flex-1 flex items-center justify-center relative">
-                                <ResponsiveContainer width="100%" height={180}>
-                                    <RadialBarChart
-                                        innerRadius="60%"
-                                        outerRadius="90%"
-                                        data={radialData}
-                                        startAngle={210}
-                                        endAngle={-30}
-                                    >
-                                        <defs>
-                                            <linearGradient id="radialGrad" x1="0" y1="0" x2="1" y2="0">
-                                                <stop offset="0%" stopColor="#818cf8" />
-                                                <stop offset="100%" stopColor="#6366f1" />
-                                            </linearGradient>
-                                        </defs>
-                                        <RadialBar
-                                            background={{ fill: '#e2e8f0' }}
-                                            dataKey="value"
-                                            cornerRadius={8}
-                                            max={100}
-                                        />
-                                    </RadialBarChart>
-                                </ResponsiveContainer>
-                                <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                                    <span className={`text-3xl font-black tabular-nums ${savingsRate >= 20 ? 'text-indigo-600' : savingsRate >= 0 ? 'text-amber-500' : 'text-red-500'}`}>
-                                        {savingsRate}%
-                                    </span>
-                                    <span className="text-[10px] font-bold text-white/70 uppercase tracking-wider">Saved</span>
-                                </div>
+                                <p className="text-[10px] text-center text-white/70 font-semibold mt-1 uppercase tracking-wider">
+                                    <span className="inline-flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-red-500 inline-block"></span>Highest spend day</span>
+                                </p>
                             </div>
-                            <p className={`text-xs text-center font-bold mt-1 ${savingsRate >= 20 ? 'text-indigo-500' : savingsRate >= 0 ? 'text-amber-500' : 'text-red-500'}`}>
-                                {savingsRate >= 20 ? '🎉 Great job!' : savingsRate >= 0 ? '⚠️ Try to save more' : '🚨 Over budget!'}
-                            </p>
+
+                            {/* Top Expense Categories */}
+                            <div className="glass rounded-3xl p-6 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-white/60">
+                                <h3 className="text-base font-black text-white mb-1 tracking-tight">Top Categories</h3>
+                                <p className="text-xs text-white/70 font-medium mb-4">Where your money goes</p>
+                                {topCategories.length > 0 ? (
+                                    <ResponsiveContainer width="100%" height={180}>
+                                        <BarChart data={topCategories} layout="vertical" margin={{ top: 0, right: 10, left: 0, bottom: 0 }}>
+                                            <XAxis type="number" hide />
+                                            <YAxis type="category" dataKey="name" tick={{ fill: '#f8fafc', fontSize: 11, fontWeight: 600 }} axisLine={false} tickLine={false} width={72} />
+                                            <Tooltip
+                                                formatter={(v) => [formatCurrency(v), 'Spent']}
+                                                contentStyle={{ borderRadius: '0.75rem', border: 'none', boxShadow: '0 10px 25px rgba(0,0,0,0.1)', padding: '8px 14px', fontSize: 12 }}
+                                            />
+                                            <Bar dataKey="value" radius={[0, 6, 6, 0]}>
+                                                {topCategories.map((_, i) => (
+                                                    <Cell key={i} fill={COLORS[i % COLORS.length]} />
+                                                ))}
+                                            </Bar>
+                                        </BarChart>
+                                    </ResponsiveContainer>
+                                ) : (
+                                    <div className="flex items-center justify-center h-44 text-white/70 text-sm font-medium">No expense data yet</div>
+                                )}
+                            </div>
+
+                            {/* Savings Rate Gauge */}
+                            <div className="glass rounded-3xl p-6 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-white/60 flex flex-col">
+                                <h3 className="text-base font-black text-white mb-1 tracking-tight">Savings Rate</h3>
+                                <p className="text-xs text-white/70 font-medium mb-2">% of income saved</p>
+                                <div className="flex-1 flex items-center justify-center relative">
+                                    <ResponsiveContainer width="100%" height={180}>
+                                        <RadialBarChart
+                                            innerRadius="60%"
+                                            outerRadius="90%"
+                                            data={radialData}
+                                            startAngle={210}
+                                            endAngle={-30}
+                                        >
+                                            <defs>
+                                                <linearGradient id="radialGrad" x1="0" y1="0" x2="1" y2="0">
+                                                    <stop offset="0%" stopColor="#818cf8" />
+                                                    <stop offset="100%" stopColor="#6366f1" />
+                                                </linearGradient>
+                                            </defs>
+                                            <RadialBar
+                                                background={{ fill: '#e2e8f0' }}
+                                                dataKey="value"
+                                                cornerRadius={8}
+                                                max={100}
+                                            />
+                                        </RadialBarChart>
+                                    </ResponsiveContainer>
+                                    <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                                        <span className={`text-3xl font-black tabular-nums ${savingsRate >= 20 ? 'text-indigo-600' : savingsRate >= 0 ? 'text-amber-500' : 'text-red-500'}`}>
+                                            {savingsRate}%
+                                        </span>
+                                        <span className="text-[10px] font-bold text-white/70 uppercase tracking-wider">Saved</span>
+                                    </div>
+                                </div>
+                                <p className={`text-xs text-center font-bold mt-1 ${savingsRate >= 20 ? 'text-indigo-500' : savingsRate >= 0 ? 'text-amber-500' : 'text-red-500'}`}>
+                                    {savingsRate >= 20 ? '🎉 Great job!' : savingsRate >= 0 ? '⚠️ Try to save more' : '🚨 Over budget!'}
+                                </p>
+                            </div>
                         </div>
-                    </div>
-                )}
+                    )}
 
                 {/* ── Spending Trends ─────────────────────────────── */}
                 {dailyTrendData.length > 0 && (
