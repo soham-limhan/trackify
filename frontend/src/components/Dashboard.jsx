@@ -12,6 +12,8 @@ import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import html2canvas from 'html2canvas';
 
+import { API_BASE_URL, WS_BASE_URL } from '../config';
+
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d', '#ffc658'];
 
 export default function Dashboard() {
@@ -49,7 +51,7 @@ export default function Dashboard() {
     const wsRef = useRef(null);
 
     const connectClock = useCallback(() => {
-        const ws = new WebSocket('ws://localhost:8000/ws/clock');
+        const ws = new WebSocket(`${WS_BASE_URL}/ws/clock`);
         ws.onmessage = (event) => {
             const data = JSON.parse(event.data);
             setClockTime(data.time);
@@ -69,7 +71,7 @@ export default function Dashboard() {
     }, [connectClock]);
 
     const axiosInstance = axios.create({
-        baseURL: 'http://localhost:8000/api',
+        baseURL: `${API_BASE_URL}/api`,
         headers: {
             'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
@@ -250,7 +252,7 @@ export default function Dashboard() {
     const dashboardRef = useRef(null);
 
     const handleExportCSV = () => {
-        window.open('http://localhost:8000/api/transactions/export/csv?token=' + localStorage.getItem('token'), '_blank');
+        window.open(`${API_BASE_URL}/api/transactions/export/csv?token=` + localStorage.getItem('token'), '_blank');
         // Actually, since we use axios with headers, it's better to fetch and download
         fetchExport('/transactions/export/csv', `trackify_transactions_${new Date().toISOString().split('T')[0]}.csv`);
     };

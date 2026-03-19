@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { GoogleLogin } from '@react-oauth/google';
+import { API_BASE_URL } from '../config';
 
 export default function Login() {
     const [email, setEmail] = useState('');
@@ -17,7 +18,7 @@ export default function Login() {
             formData.append('username', email); // OAuth2 expects 'username'
             formData.append('password', password);
 
-            const res = await axios.post('http://localhost:8000/api/auth/token', formData, {
+            const res = await axios.post(`${API_BASE_URL}/api/auth/token`, formData, {
                 headers: {
                     'Content-Type': 'multipart/form-data'
                 }
@@ -31,7 +32,7 @@ export default function Login() {
 
     const handleGoogleSuccess = async (credentialResponse) => {
         try {
-            const res = await axios.post('http://localhost:8000/api/auth/google', { token: credentialResponse.credential });
+            const res = await axios.post(`${API_BASE_URL}/api/auth/google`, { token: credentialResponse.credential });
             localStorage.setItem('token', res.data.access_token);
             navigate('/dashboard');
         } catch (err) {

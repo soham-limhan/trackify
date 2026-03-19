@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { GoogleLogin } from '@react-oauth/google';
+import { API_BASE_URL } from '../config';
 
 export default function Register() {
     const [name, setName] = useState('');
@@ -16,7 +17,7 @@ export default function Register() {
         setError('');
         setLoading(true);
         try {
-            const res = await axios.post('http://localhost:8000/api/auth/register', {
+            const res = await axios.post(`${API_BASE_URL}/api/auth/register`, {
                 full_name: name,
                 email,
                 password
@@ -32,7 +33,7 @@ export default function Register() {
 
     const handleGoogleSuccess = async (credentialResponse) => {
         try {
-            const res = await axios.post('http://localhost:8000/api/auth/google', { token: credentialResponse.credential });
+            const res = await axios.post(`${API_BASE_URL}/api/auth/google`, { token: credentialResponse.credential });
             localStorage.setItem('token', res.data.access_token);
             navigate('/dashboard');
         } catch (err) {
