@@ -140,7 +140,7 @@ venv\Scripts\activate        # Windows
 pip install -r requirements.txt
 
 # Place your Firebase service account key
-# Copy your serviceAccountkey.json into the backend/ directory
+# Create a .env file in the backend/ directory with your Firebase service account credentials (ex: FIREBASE_PROJECT_ID, FIREBASE_PRIVATE_KEY, etc.)
 
 # Start the backend server
 uvicorn main:app --reload --port 8000
@@ -220,10 +220,10 @@ docker-compose up --build
 |-----------------------|------------------------|--------------------------------------|
 | `SECRET_KEY`          | `backend/auth.py`      | JWT signing secret                   |
 | `GOOGLE_CLIENT_ID`    | `backend/auth.py`      | Google OAuth 2.0 Client ID           |
-| `serviceAccountkey.json` | `backend/`          | Firebase Admin SDK credentials       |
+| `FIREBASE_*`          | `backend/.env`         | Firebase Admin SDK credentials       |
 
 > [!IMPORTANT]
-> For production, move secrets to environment variables or a secrets manager. Never commit `serviceAccountkey.json` to version control.
+> For production, move secrets to environment variables or a secrets manager. Never commit `.env` or `serviceAccountkey.json` to version control.
 
 ---
 

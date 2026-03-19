@@ -9,6 +9,8 @@ services:
     volumes:
       # Persist the SQLite database file outside the container
       - ./backend/trackify.db:/app/trackify.db
+    env_file:
+      - ./backend/.env
     environment:
       - PYTHONUNBUFFERED=1
     restart: unless-stopped
