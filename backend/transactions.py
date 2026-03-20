@@ -47,6 +47,7 @@ class AnalyticsSummary(BaseModel):
     total_income: float
     total_expenses: float
     expenses_by_category: Dict[str, float]
+    financial_advice: List[str] = []
 
 class RecurringExpenseCreate(BaseModel):
     amount: float
@@ -153,10 +154,47 @@ def get_analytics(db: firestore.Client = Depends(database.get_db), current_user:
             else:
                 expenses_by_category[category] = amount
                 
+    advice = []
+    
+    # 1. Savings Rate Advice
+    if total_income > 0:
+        savings_rate = ((total_income - total_expenses) / total_income) * 100
+        if savings_rate >= 20:
+            advice.append(f"Great job! You are saving {savings_rate:.1f}% of your income, which meets the recommended 20% goal.")
+        elif savings_rate > 0:
+            advice.append(f"You saved {savings_rate:.1f}% of your income. Try to reduce discretionary spending to reach a 20% savings goal.")
+        else:
+            advice.append("Alert: Your expenses exceed your income. Please review your spending to avoid debt.")
+    elif total_expenses > 0:
+        advice.append("Alert: You have expenses but no recorded income. Make sure to log your income to track net savings.")
+            
+    # 2. Category Advice (Top Spending)
+    if expenses_by_category:
+        top_category = max(expenses_by_category.items(), key=lambda x: x[1])
+        cat_name, cat_amount = top_category
+        cat_percent = (cat_amount / total_expenses) * 100 if total_expenses > 0 else 0
+        
+        if cat_percent > 30:
+            advice.append(f"Note: You're spending {cat_percent:.1f}% of your total expenses on '{cat_name}'. Consider budgeting this category better.")
+        else:
+            advice.append(f"Your spending is diversified. Your top expense is '{cat_name}' at {cat_percent:.1f}% of total expenses.")
+            
+    # 3. Budget Checking
+    budgets_ref = db.collection('budgets').where('user_id', '==', current_user.id).limit(1).stream()
+    budget_doc = next(budgets_ref, None)
+    if budget_doc:
+        limit_amount = budget_doc.to_dict().get('limit_amount', 0)
+        if total_expenses > limit_amount:
+            excess = total_expenses - limit_amount
+            advice.append(f"Warning: You have exceeded your set budget by ₹{excess:.2f}.")
+        elif total_expenses > limit_amount * 0.8:
+            advice.append(f"Caution: You have used {((total_expenses/limit_amount)*100):.1f}% of your budget. Slow down spending.")
+
     return AnalyticsSummary(
         total_income=total_income,
         total_expenses=total_expenses,
-        expenses_by_category=expenses_by_category
+        expenses_by_category=expenses_by_category,
+        financial_advice=advice
     )
 
 @router.delete("/reset")

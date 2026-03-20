@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { LogOut, PlusCircle, MinusCircle, Wallet, Target, Activity, UploadCloud, Trash2, Clock } from 'lucide-react';
+import { LogOut, PlusCircle, MinusCircle, Wallet, Target, Activity, UploadCloud, Trash2, Clock, Sparkles } from 'lucide-react';
 import {
     BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
     PieChart, Pie, Cell, Legend,
@@ -774,9 +774,47 @@ export default function Dashboard() {
 
                     {/* Visualizations & History */}
                     <div className="lg:col-span-2 space-y-8">
-                            {/* Visualizations Container */}
-                            <div id="charts-to-capture" className="glass rounded-3xl p-8 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-white/60">
-                                <h3 className="text-2xl font-black text-white mb-8 tracking-tight">Financial Insights</h3>
+                        {/* Smart Financial Advice */}
+                        {analytics?.financial_advice && analytics.financial_advice.length > 0 && (
+                            <div className="glass rounded-3xl p-8 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-white/60 bg-gradient-to-r from-indigo-500/10 to-purple-500/10 relative overflow-hidden">
+                                <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full blur-3xl -mr-20 -mt-20 pointer-events-none"></div>
+                                <h3 className="text-2xl font-black text-white mb-6 tracking-tight flex items-center gap-3">
+                                    <Sparkles className="text-amber-400" size={28} /> AI Financial Advisor
+                                </h3>
+                                <div className="space-y-4 relative z-10">
+                                    {analytics.financial_advice.map((advice, index) => {
+                                        let bgColor = 'bg-white/10';
+                                        let borderColor = 'border-white/20';
+                                        let icon = '💡';
+                                        
+                                        if (advice.startsWith('Alert:') || advice.startsWith('Warning:')) {
+                                            bgColor = 'bg-red-500/10';
+                                            borderColor = 'border-red-500/30';
+                                            icon = '⚠️';
+                                        } else if (advice.startsWith('Great job!')) {
+                                            bgColor = 'bg-emerald-500/10';
+                                            borderColor = 'border-emerald-500/30';
+                                            icon = '🎉';
+                                        } else if (advice.startsWith('Caution:')) {
+                                            bgColor = 'bg-amber-500/10';
+                                            borderColor = 'border-amber-500/30';
+                                            icon = '⚡';
+                                        }
+                                        
+                                        return (
+                                            <div key={index} className={`p-4 rounded-2xl border ${borderColor} ${bgColor} flex items-start gap-4 transition-transform hover:-translate-y-1`}>
+                                                <span className="text-2xl mt-1">{icon}</span>
+                                                <p className="text-white/90 font-medium leading-relaxed">{advice}</p>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Visualizations Container */}
+                        <div id="charts-to-capture" className="glass rounded-3xl p-8 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-white/60">
+                            <h3 className="text-2xl font-black text-white mb-8 tracking-tight">Financial Insights</h3>
 
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                                     {/* Summary Bar Chart */}
