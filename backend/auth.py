@@ -48,6 +48,13 @@ class Token(BaseModel):
     token_type: str
     user: dict
 
+class ForgotPassword(BaseModel):
+    email: EmailStr
+
+class ResetPassword(BaseModel):
+    token: str
+    new_password: str
+
 def verify_password(plain_password: str, hashed_password: str):
     return bcrypt.checkpw(plain_password.encode('utf-8'), hashed_password.encode('utf-8'))
 
@@ -212,3 +219,58 @@ def google_login(google_login: GoogleLogin, db: firestore.Client = Depends(datab
 
     except ValueError:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid Google Token")
+
+@router.post("/forgot-password")
+def forgot_password(request: ForgotPassword, db: firestore.Client = Depends(database.get_db)):
+    users_ref = db.collection('users').where('email', '==', request.email).limit(1).stream()
+    user_doc = next(users_ref, None)
+    
+    if not user_doc:
+        # We don't want to expose whether a user exists or not
+        return {"message": "If that email is registered, a password reset link has been sent."}
+    
+    user_data = user_doc.to_dict()
+    if not user_data.get('is_active', True):
+        raise HTTPException(status_code=400, detail="Account is inactive")
+        
+    # Generate a short-lived reset token (e.g. 15 minutes)
+    reset_token = create_access_token(
+        data={"sub": request.email, "type": "password_reset"},
+        expires_delta=timedelta(minutes=15)
+    )
+    
+    # In a real app, send an email here with a link like:
+    # https://yourfrontend.com/reset-password?token=XYZ
+    print(f"Password reset token for {request.email}: {reset_token}")
+    
+    # Returning the token just for demo/dev purposes
+    return {
+        "message": "If that email is registered, a password reset link has been sent.",
+        "dev_reset_token": reset_token 
+    }
+
+@router.post("/reset-password")
+def reset_password(request: ResetPassword, db: firestore.Client = Depends(database.get_db)):
+    try:
+        payload = jwt.decode(request.token, SECRET_KEY, algorithms=[ALGORITHM])
+        email: str = payload.get("sub")
+        token_type: str = payload.get("type")
+        
+        if email is None or token_type != "password_reset":
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid reset token")
+            
+    except JWTError:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid or expired reset token")
+        
+    users_ref = db.collection('users').where('email', '==', email).limit(1).stream()
+    user_doc = next(users_ref, None)
+    
+    if not user_doc:
+        raise HTTPException(status_code=404, detail="User not found")
+        
+    hashed_password = get_password_hash(request.new_password)
+    
+    doc_ref = db.collection('users').document(user_doc.id)
+    doc_ref.update({"hashed_password": hashed_password})
+    
+    return {"message": "Password has been reset successfully"}
