@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import axios from 'axios';
 import { LogOut, PlusCircle, MinusCircle, Wallet, Target, Activity, UploadCloud, Trash2, Clock, Sparkles } from 'lucide-react';
 import {
@@ -458,7 +459,7 @@ export default function Dashboard() {
                     </div>
                     <button
                         onClick={handleResetData}
-                        className="flex items-center gap-2 px-4 py-2 bg-white/10/10 hover:bg-red-50 hover:text-red-600 text-white font-bold rounded-lg border border-white/80 transition-all shadow-sm hover:shadow"
+                        className="flex items-center gap-2 px-4 py-2 bg-white/5 hover:bg-red-500/10 hover:text-red-600 text-white font-bold rounded-lg border border-white/10 transition-all shadow-sm hover:shadow"
                         title="Reset all amounts and figures"
                     >
                         <Trash2 size={16} strokeWidth={2.5} />
@@ -466,7 +467,7 @@ export default function Dashboard() {
                     </button>
                     <button
                         onClick={handleLogout}
-                        className="flex items-center gap-2 px-4 py-2 bg-white/10/10 hover:bg-red-50 hover:text-red-600 text-white font-bold rounded-lg border border-white/80 transition-all shadow-sm hover:shadow"
+                        className="flex items-center gap-2 px-4 py-2 bg-white/5 hover:bg-red-500/10 hover:text-red-600 text-white font-bold rounded-lg border border-white/10 transition-all shadow-sm hover:shadow"
                     >
                         <LogOut size={16} strokeWidth={2.5} />
                         <span className="hidden sm:inline">Logout</span>
@@ -474,7 +475,7 @@ export default function Dashboard() {
                 </div>
             </header>
 
-            <main ref={dashboardRef} className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+            <motion.main initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, staggerChildren: 0.1 }} ref={dashboardRef} className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
                 {/* Hero Section with Parallax Effect */}
                 <div className="relative h-[40vh] min-h-[300px] flex items-center mb-12 pointer-events-none">
                     <div
@@ -491,22 +492,22 @@ export default function Dashboard() {
                 </div>
 
                 {/* Summary Cards */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12 relative z-20">
-                    <div className="glass rounded-3xl p-6 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-white/60 hover:-translate-y-1 transition-transform">
+                <motion.div initial="hidden" animate="visible" variants={{ hidden: { opacity: 0 }, visible: { opacity: 1, transition: { staggerChildren: 0.1 } } }} className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12 relative z-20">
+                    <motion.div variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0 }, hover: { scale: 1.02 } }} className="glass rounded-3xl p-6 shadow-2xl shadow-black/40 border border-white/5 hover:-translate-y-1 transition-transform">
                         <div className="flex items-center justify-between mb-4">
                             <h3 className="text-sm font-bold text-white/90 uppercase tracking-wider">Total Income</h3>
-                            <div className="p-2 bg-emerald-100 text-emerald-600 rounded-lg"><PlusCircle size={20} /></div>
+                            <div className="p-2 bg-emerald-500/10 text-emerald-400 rounded-lg"><PlusCircle size={20} /></div>
                         </div>
                         <p className="text-4xl font-black text-white">{formatCurrency(analytics?.total_income)}</p>
-                    </div>
-                    <div className="glass rounded-3xl p-6 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-white/60 hover:-translate-y-1 transition-transform">
+                    </motion.div>
+                    <motion.div variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0 }, hover: { scale: 1.02 } }} className="glass rounded-3xl p-6 shadow-2xl shadow-black/40 border border-white/5 hover:-translate-y-1 transition-transform">
                         <div className="flex items-center justify-between mb-4">
                             <h3 className="text-sm font-bold text-white/90 uppercase tracking-wider">Total Expenses</h3>
-                            <div className="p-2 bg-red-100 text-red-600 rounded-lg"><MinusCircle size={20} /></div>
+                            <div className="p-2 bg-red-500/10 text-red-400 rounded-lg"><MinusCircle size={20} /></div>
                         </div>
                         <p className="text-4xl font-black text-white">{formatCurrency(analytics?.total_expenses)}</p>
                         {budget && (
-                            <div className="mt-4 pt-4 border-t border-slate-200/50">
+                            <div className="mt-4 pt-4 border-t border-white/10/50">
                                 <div className="flex justify-between text-xs font-bold mb-1">
                                     <span className="text-white/70">Budget Limit</span>
                                     <span className={analytics?.total_expenses > budget ? 'text-red-600' : 'text-emerald-600'}>
@@ -521,23 +522,23 @@ export default function Dashboard() {
                                 </div>
                             </div>
                         )}
-                    </div>
-                    <div className="glass rounded-3xl p-6 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-white/60 hover:-translate-y-1 transition-transform">
+                    </motion.div>
+                    <motion.div variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0 }, hover: { scale: 1.02 } }} className="glass rounded-3xl p-6 shadow-2xl shadow-black/40 border border-white/5 hover:-translate-y-1 transition-transform">
                         <div className="flex items-center justify-between mb-4">
                             <h3 className="text-sm font-bold text-white/70 uppercase tracking-wider">Net Savings</h3>
-                            <div className="p-2 bg-brand/10 text-indigo-400 rounded-lg"><Wallet size={20} /></div>
+                            <div className="p-2 bg-indigo-500/10 text-indigo-400 rounded-lg"><Wallet size={20} /></div>
                         </div>
                         <p className={`text-4xl font-black ${(analytics?.total_income - analytics?.total_expenses) >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
                             {formatCurrency(Math.max(0, (analytics?.total_income || 0) - (analytics?.total_expenses || 0)))}
                         </p>
-                    </div>
-                </div>
+                    </motion.div>
+                </motion.div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                     {/* Forms Section */}
                     <div className="space-y-8">
                         {/* Transaction Form */}
-                        <div className="glass rounded-3xl p-8 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-white/60">
+                        <div className="glass rounded-3xl p-8 shadow-2xl shadow-black/40 border border-white/5">
                             <h3 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
                                 <Activity className="text-indigo-400" size={24} /> Add Transaction
                             </h3>
@@ -568,7 +569,7 @@ export default function Dashboard() {
                                         step="0.01"
                                         value={amount}
                                         onChange={(e) => setAmount(e.target.value)}
-                                        className="w-full px-4 py-3 rounded-xl border-none bg-slate-900/60 focus:ring-2 focus:ring-brand/50 font-medium text-slate-100 placeholder-slate-400"
+                                        className="w-full px-4 py-3 rounded-xl border-none bg-black/20 focus:ring-2 focus:ring-indigo-500/50 font-medium text-slate-100 placeholder-slate-400"
                                         placeholder="0.00"
                                     />
                                 </div>
@@ -579,7 +580,7 @@ export default function Dashboard() {
                                         required
                                         value={category}
                                         onChange={(e) => setCategory(e.target.value)}
-                                        className="w-full px-4 py-3 rounded-xl border-none bg-slate-900/60 focus:ring-2 focus:ring-brand/50 font-medium text-slate-100 placeholder-slate-400"
+                                        className="w-full px-4 py-3 rounded-xl border-none bg-black/20 focus:ring-2 focus:ring-indigo-500/50 font-medium text-slate-100 placeholder-slate-400"
                                         placeholder={type === 'income' ? 'e.g. Salary, Freelance' : 'e.g. Groceries, Rent'}
                                     />
                                 </div>
@@ -589,7 +590,7 @@ export default function Dashboard() {
                                         type="text"
                                         value={description}
                                         onChange={(e) => setDescription(e.target.value)}
-                                        className="w-full px-4 py-3 rounded-xl border-none bg-slate-900/60 focus:ring-2 focus:ring-brand/50 font-medium text-slate-100 placeholder-slate-400"
+                                        className="w-full px-4 py-3 rounded-xl border-none bg-black/20 focus:ring-2 focus:ring-indigo-500/50 font-medium text-slate-100 placeholder-slate-400"
                                         placeholder="Optional notes"
                                     />
                                 </div>
@@ -601,7 +602,7 @@ export default function Dashboard() {
                         </div>
 
                         {/* Recurring Expenses (EMI) Form */}
-                        <div className="glass rounded-3xl p-8 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-white/60">
+                        <div className="glass rounded-3xl p-8 shadow-2xl shadow-black/40 border border-white/5">
                             <div className="flex items-center justify-between mb-6">
                                 <h3 className="text-xl font-bold text-white flex items-center gap-2">
                                     <Clock className="text-indigo-400" size={24} /> Recurring EMI
@@ -623,7 +624,7 @@ export default function Dashboard() {
                                             required
                                             value={reAmount}
                                             onChange={(e) => setReAmount(e.target.value)}
-                                            className="w-full px-4 py-3 rounded-xl border-none bg-slate-900/60 focus:ring-2 focus:ring-brand/50 font-medium text-slate-100 placeholder-slate-400"
+                                            className="w-full px-4 py-3 rounded-xl border-none bg-black/20 focus:ring-2 focus:ring-indigo-500/50 font-medium text-slate-100 placeholder-slate-400"
                                             placeholder="Monthly amount"
                                         />
                                     </div>
@@ -637,7 +638,7 @@ export default function Dashboard() {
                                                 required
                                                 value={reDay}
                                                 onChange={(e) => setReDay(e.target.value)}
-                                                className="w-full px-4 py-3 rounded-xl border-none bg-slate-900/60 focus:ring-2 focus:ring-brand/50 font-medium text-slate-100"
+                                                className="w-full px-4 py-3 rounded-xl border-none bg-black/20 focus:ring-2 focus:ring-indigo-500/50 font-medium text-slate-100"
                                             />
                                         </div>
                                         <div>
@@ -648,7 +649,7 @@ export default function Dashboard() {
                                                 required
                                                 value={reMonths}
                                                 onChange={(e) => setReMonths(e.target.value)}
-                                                className="w-full px-4 py-3 rounded-xl border-none bg-slate-900/60 focus:ring-2 focus:ring-brand/50 font-medium text-slate-100"
+                                                className="w-full px-4 py-3 rounded-xl border-none bg-black/20 focus:ring-2 focus:ring-indigo-500/50 font-medium text-slate-100"
                                             />
                                         </div>
                                     </div>
@@ -659,7 +660,7 @@ export default function Dashboard() {
                                             required
                                             value={reCategory}
                                             onChange={(e) => setReCategory(e.target.value)}
-                                            className="w-full px-4 py-3 rounded-xl border-none bg-slate-900/60 focus:ring-2 focus:ring-brand/50 font-medium text-slate-100 placeholder-slate-400"
+                                            className="w-full px-4 py-3 rounded-xl border-none bg-black/20 focus:ring-2 focus:ring-indigo-500/50 font-medium text-slate-100 placeholder-slate-400"
                                             placeholder="e.g. Home Loan, Car EMI"
                                         />
                                     </div>
@@ -669,7 +670,7 @@ export default function Dashboard() {
                                             type="text"
                                             value={reDescription}
                                             onChange={(e) => setReDescription(e.target.value)}
-                                            className="w-full px-4 py-3 rounded-xl border-none bg-slate-900/60 focus:ring-2 focus:ring-brand/50 font-medium text-slate-100 placeholder-slate-400"
+                                            className="w-full px-4 py-3 rounded-xl border-none bg-black/20 focus:ring-2 focus:ring-indigo-500/50 font-medium text-slate-100 placeholder-slate-400"
                                             placeholder="Optional details"
                                         />
                                     </div>
@@ -682,7 +683,7 @@ export default function Dashboard() {
                             )}
 
                             {/* Budget Form */}
-                            <div className="glass rounded-3xl p-8 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-white/60 bg-gradient-to-br from-indigo-50/50 to-purple-50/50">
+                            <div className="glass rounded-3xl p-8 shadow-2xl shadow-black/40 border border-white/5 bg-gradient-to-br from-indigo-500/5 to-purple-500/5">
                                 <h3 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
                                     <Target className="text-purple-600" size={24} /> Set Debit Limit
                                 </h3>
@@ -695,7 +696,7 @@ export default function Dashboard() {
                                             min="1"
                                             value={budgetLimit}
                                             onChange={(e) => setBudgetLimit(e.target.value)}
-                                            className="w-full px-4 py-3 rounded-xl border-none bg-slate-900/60 focus:ring-2 focus:ring-purple-500/50 font-medium text-slate-100 placeholder-slate-400"
+                                            className="w-full px-4 py-3 rounded-xl border-none bg-black/20 focus:ring-2 focus:ring-purple-500/50 font-medium text-slate-100 placeholder-slate-400"
                                             placeholder={budget ? formatCurrency(budget) : "0.00"}
                                         />
                                     </div>
@@ -706,13 +707,13 @@ export default function Dashboard() {
                             </div>
 
                             {/* Statement Upload */}
-                            <div className="glass rounded-3xl p-8 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-white/60">
+                            <div className="glass rounded-3xl p-8 shadow-2xl shadow-black/40 border border-white/5">
                                 <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
                                     <UploadCloud className="text-blue-500" size={24} /> Smart Import
                                 </h3>
                                 <p className="text-sm text-white/70 font-medium mb-6">Upload your bank statement PDF to automatically log your transactions.</p>
 
-                                <div className="relative group cursor-pointer border-2 border-dashed border-slate-300 rounded-2xl p-6 text-center hover:bg-slate-50/50 hover:border-blue-400 transition-colors" onClick={() => fileInputRef.current?.click()}>
+                                <div className="relative group cursor-pointer border-2 border-dashed border-white/10 rounded-2xl p-6 text-center hover:bg-white/5 hover:border-indigo-400 transition-colors" onClick={() => fileInputRef.current?.click()}>
                                     <input
                                         type="file"
                                         ref={fileInputRef}
@@ -727,7 +728,7 @@ export default function Dashboard() {
                                 </div>
 
                                 {uploadMsg && (
-                                    <div className={`mt-4 p-3 rounded-xl text-sm font-bold text-center ${uploadMsg.includes('Success') ? 'bg-emerald-50 text-emerald-600' : 'bg-blue-50 text-blue-600'}`}>
+                                    <div className={`mt-4 p-3 rounded-xl text-sm font-bold text-center ${uploadMsg.includes('Success') ? 'bg-emerald-500/20 text-emerald-400' : 'bg-blue-500/20 text-blue-400'}`}>
                                         {uploadMsg}
                                     </div>
                                 )}
@@ -735,7 +736,7 @@ export default function Dashboard() {
 
                             {/* Active EMIs List */}
                             {recurringExpenses.length > 0 && (
-                                <div className="glass rounded-3xl p-8 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-white/60">
+                                <div className="glass rounded-3xl p-8 shadow-2xl shadow-black/40 border border-white/5">
                                     <h3 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
                                         <Clock className="text-indigo-400" size={24} /> Active EMIs
                                     </h3>
@@ -776,7 +777,7 @@ export default function Dashboard() {
                     <div className="lg:col-span-2 space-y-8">
                         {/* Smart Financial Advice */}
                         {analytics?.financial_advice && analytics.financial_advice.length > 0 && (
-                            <div className="glass rounded-3xl p-8 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-white/60 bg-gradient-to-r from-indigo-500/10 to-purple-500/10 relative overflow-hidden">
+                            <div className="glass rounded-3xl p-8 shadow-2xl shadow-black/40 border border-white/5 bg-gradient-to-r from-indigo-500/10 to-emerald-500/10 relative overflow-hidden">
                                 <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full blur-3xl -mr-20 -mt-20 pointer-events-none"></div>
                                 <h3 className="text-2xl font-black text-white mb-6 tracking-tight flex items-center gap-3">
                                     <Sparkles className="text-amber-400" size={28} /> AI Financial Advisor
@@ -813,7 +814,7 @@ export default function Dashboard() {
                         )}
 
                         {/* Visualizations Container */}
-                        <div id="charts-to-capture" className="glass rounded-3xl p-8 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-white/60">
+                        <div id="charts-to-capture" className="glass rounded-3xl p-8 shadow-2xl shadow-black/40 border border-white/5">
                             <h3 className="text-2xl font-black text-white mb-8 tracking-tight">Financial Insights</h3>
 
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -875,11 +876,11 @@ export default function Dashboard() {
                             </div>
 
                             {/* Recent Transactions List */}
-                            <div className="glass rounded-3xl p-8 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-white/60">
+                            <div className="glass rounded-3xl p-8 shadow-2xl shadow-black/40 border border-white/5">
                                 <h3 className="text-xl font-bold text-white mb-6">Recent Transactions</h3>
 
                                 {transactions.length === 0 ? (
-                                    <div className="text-center py-10 border-white/10 rounded-2xl border border-dashed border-slate-300">
+                                    <div className="text-center py-10 border-white/10 rounded-2xl border border-dashed border-white/10">
                                         <p className="text-white/70 font-medium">No transactions recorded yet.</p>
                                     </div>
                                 ) : (
@@ -887,7 +888,7 @@ export default function Dashboard() {
                                         {transactions.slice(0, 10).map((t) => (
                                             <div key={t.id} className="flex items-center justify-between p-4 bg-white/10/5 rounded-2xl hover:bg-white/10/10 transition-colors">
                                                 <div className="flex items-center gap-4">
-                                                    <div className={`p-3 rounded-xl ${t.type === 'income' ? 'bg-emerald-100 text-emerald-600' : 'bg-red-100 text-red-600'}`}>
+                                                    <div className={`p-3 rounded-xl ${t.type === 'income' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-red-500/10 text-red-400'}`}>
                                                         {t.type === 'income' ? <PlusCircle size={20} /> : <MinusCircle size={20} />}
                                                     </div>
                                                     <div>
@@ -914,7 +915,7 @@ export default function Dashboard() {
                         <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-8">
 
                             {/* Weekly Spending Pattern */}
-                            <div className="glass rounded-3xl p-6 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-white/60">
+                            <div className="glass rounded-3xl p-6 shadow-2xl shadow-black/40 border border-white/5">
                                 <h3 className="text-base font-black text-white mb-1 tracking-tight">Weekly Pattern</h3>
                                 <p className="text-xs text-white/70 font-medium mb-4">Expenses by day of week</p>
                                 <ResponsiveContainer width="100%" height={180}>
@@ -939,7 +940,7 @@ export default function Dashboard() {
                             </div>
 
                             {/* Top Expense Categories */}
-                            <div className="glass rounded-3xl p-6 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-white/60">
+                            <div className="glass rounded-3xl p-6 shadow-2xl shadow-black/40 border border-white/5">
                                 <h3 className="text-base font-black text-white mb-1 tracking-tight">Top Categories</h3>
                                 <p className="text-xs text-white/70 font-medium mb-4">Where your money goes</p>
                                 {topCategories.length > 0 ? (
@@ -964,7 +965,7 @@ export default function Dashboard() {
                             </div>
 
                             {/* Savings Rate Gauge */}
-                            <div className="glass rounded-3xl p-6 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-white/60 flex flex-col">
+                            <div className="glass rounded-3xl p-6 shadow-2xl shadow-black/40 border border-white/5 flex flex-col">
                                 <h3 className="text-base font-black text-white mb-1 tracking-tight">Savings Rate</h3>
                                 <p className="text-xs text-white/70 font-medium mb-2">% of income saved</p>
                                 <div className="flex-1 flex items-center justify-center relative">
@@ -1008,7 +1009,7 @@ export default function Dashboard() {
                 {dailyTrendData.length > 0 && (
                     <div className="mt-8 space-y-8">
                         {/* Daily Income vs Expense Line Chart */}
-                        <div className="glass rounded-3xl p-8 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-white/60">
+                        <div className="glass rounded-3xl p-8 shadow-2xl shadow-black/40 border border-white/5">
                             <h3 className="text-2xl font-black text-white mb-2 tracking-tight">Spending Trends</h3>
                             <p className="text-sm text-white/70 font-medium mb-8">Daily income &amp; expense activity over time</p>
                             <ResponsiveContainer width="100%" height={280}>
@@ -1047,7 +1048,7 @@ export default function Dashboard() {
                         </div>
 
                         {/* Cumulative Net Savings Area Chart */}
-                        <div className="glass rounded-3xl p-8 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-white/60 bg-gradient-to-br from-indigo-50/40 to-blue-50/40">
+                        <div className="glass rounded-3xl p-8 shadow-2xl shadow-black/40 border border-white/5 bg-gradient-to-br from-indigo-500/5 to-blue-500/5">
                             <h3 className="text-2xl font-black text-white mb-2 tracking-tight">Cumulative Savings</h3>
                             <p className="text-sm text-white/70 font-medium mb-8">Your running net savings growth over time</p>
                             <ResponsiveContainer width="100%" height={240}>
@@ -1079,7 +1080,7 @@ export default function Dashboard() {
                         </div>
                     </div>
                 )}
-            </main>
+            </motion.main>
         </div>
     );
 }
