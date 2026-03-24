@@ -6,6 +6,8 @@ import Register from './components/Register';
 import Dashboard from './components/Dashboard';
 import ForgotPassword from './components/ForgotPassword';
 import ResetPassword from './components/ResetPassword';
+import { ThemeProvider } from './contexts/ThemeContext';
+import ThemeToggle from './components/ThemeToggle';
 
 const PageWrapper = ({ children }) => (
   <motion.div
@@ -37,13 +39,14 @@ const AnimatedRoutes = () => {
 
 function App() {
   return (
-    <>
+    <ThemeProvider>
       {/* Global animated CSS gradient background — sits behind everything */}
       <div className="fixed inset-0 z-[-10] animated-gradient-bg"></div>
       <BrowserRouter>
+        <ThemeToggle />
         <AnimatedRoutes />
       </BrowserRouter>
-    </>
+    </ThemeProvider>
   );
 }
 

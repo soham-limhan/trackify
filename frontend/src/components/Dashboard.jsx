@@ -408,11 +408,11 @@ export default function Dashboard() {
             <header className="sticky top-0 z-50 glass-header px-6 py-4 flex justify-between items-center transition-all duration-300">
                 <div className="flex items-center gap-4">
                     <div className="w-10 h-10 bg-indigo-600 rounded-xl shadow-lg flex items-center justify-center -rotate-3">
-                        <span className="text-xl font-black text-slate-900 tracking-tighter">Tr</span>
+                        <span className="text-xl font-black text-slate-900 dark:text-white tracking-tighter">Tr</span>
                     </div>
                     {/* Compact Title that fades in when scrolling down */}
                     <div style={headerTitleStyle} className="overflow-hidden">
-                        <span className="text-lg font-bold text-slate-900 tracking-tight whitespace-nowrap">
+                        <span className="text-lg font-bold text-slate-900 dark:text-white tracking-tight whitespace-nowrap">
                             Welcome, {user?.full_name?.split(' ')[0] || 'User'}
                         </span>
                     </div>
@@ -420,38 +420,38 @@ export default function Dashboard() {
 
                 {/* Live Clock */}
                 {clockTime && (
-                    <div className="hidden md:flex flex-col items-center justify-center px-5 py-2 bg-slate-50/70 backdrop-blur-xl rounded-2xl border border-white/70 shadow-inner">
+                    <div className="hidden md:flex flex-col items-center justify-center px-5 py-2 bg-slate-50/70 dark:bg-dark-bg/70 backdrop-blur-xl rounded-2xl border border-slate-300 dark:border-white/70 shadow-[inset_0_1px_0_rgba(255,255,255,0.1)]">
                         <div className="flex items-center gap-2">
                             <Clock size={14} className="text-indigo-600" />
-                            <span className="text-xl font-black text-slate-900 tracking-tight tabular-nums">
+                            <span className="text-xl font-black text-slate-900 dark:text-white tracking-tight tabular-nums">
                                 {clockTime}
                             </span>
                         </div>
-                        <span className="text-[10px] font-bold text-slate-800 tracking-wider uppercase mt-0.5">
+                        <span className="text-[10px] font-bold text-slate-700 dark:text-slate-300 tracking-wider uppercase mt-0.5">
                             {clockDate}
                         </span>
                     </div>
                 )}
 
                 <div className="flex items-center gap-4">
-                    <div className="hidden lg:flex items-center gap-2 border-r border-slate-200 pr-4 mr-2">
+                    <div className="hidden lg:flex items-center gap-2 border-r border-slate-300 dark:border-white/10 pr-4 mr-2">
                         <button
                             onClick={handleExportPDF}
-                            className="flex items-center gap-2 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-slate-900 text-xs font-bold rounded-lg transition-all shadow-sm"
+                            className="flex items-center gap-2 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-slate-900 dark:text-white text-xs font-bold rounded-lg transition-all shadow-sm"
                             title="Download PDF Report"
                         >
                             PDF
                         </button>
                         <button
                             onClick={handleExportExcel}
-                            className="flex items-center gap-2 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-slate-900 text-xs font-bold rounded-lg transition-all shadow-sm"
+                            className="flex items-center gap-2 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-slate-900 dark:text-white text-xs font-bold rounded-lg transition-all shadow-sm"
                             title="Export to Excel"
                         >
                             Excel
                         </button>
                         <button
                             onClick={handleExportCSV}
-                            className="flex items-center gap-2 px-3 py-1.5 bg-slate-600 hover:bg-slate-700 text-slate-900 text-xs font-bold rounded-lg transition-all shadow-sm"
+                            className="flex items-center gap-2 px-3 py-1.5 bg-slate-600 hover:bg-slate-700 text-slate-900 dark:text-white text-xs font-bold rounded-lg transition-all shadow-sm"
                             title="Export to CSV"
                         >
                             CSV
@@ -459,7 +459,7 @@ export default function Dashboard() {
                     </div>
                     <button
                         onClick={handleResetData}
-                        className="flex items-center gap-2 px-4 py-2 bg-white/80 hover:bg-red-100 hover:text-red-600 text-slate-900 font-bold rounded-lg border border-slate-200 transition-all shadow-sm hover:shadow"
+                        className="flex items-center gap-2 px-4 py-2 bg-white/60 dark:bg-dark-card/60 hover:bg-red-900/30 hover:text-red-600 text-slate-900 dark:text-white font-bold rounded-lg border border-slate-300 dark:border-white/10 transition-all shadow-sm hover:shadow"
                         title="Reset all amounts and figures"
                     >
                         <Trash2 size={16} strokeWidth={2.5} />
@@ -467,7 +467,7 @@ export default function Dashboard() {
                     </button>
                     <button
                         onClick={handleLogout}
-                        className="flex items-center gap-2 px-4 py-2 bg-white/80 hover:bg-red-100 hover:text-red-600 text-slate-900 font-bold rounded-lg border border-slate-200 transition-all shadow-sm hover:shadow"
+                        className="flex items-center gap-2 px-4 py-2 bg-white/60 dark:bg-dark-card/60 hover:bg-red-900/30 hover:text-red-600 text-slate-900 dark:text-white font-bold rounded-lg border border-slate-300 dark:border-white/10 transition-all shadow-sm hover:shadow"
                     >
                         <LogOut size={16} strokeWidth={2.5} />
                         <span className="hidden sm:inline">Logout</span>
@@ -482,10 +482,10 @@ export default function Dashboard() {
                         style={titleStyle}
                         className="absolute inset-0 flex flex-col justify-center transform-gpu origin-top-left z-10"
                     >
-                        <h1 className="text-6xl md:text-8xl font-black text-slate-900 tracking-tighter drop-shadow-[0_2px_16px_rgba(0,0,0,0.5)] mb-4">
-                            Welcome to <span className="text-transparent bg-clip-text bg-gradient-to-r from-slate-900 via-indigo-800 to-slate-900">Trackify</span>
+                        <h1 className="text-6xl md:text-8xl font-black text-slate-900 dark:text-white tracking-tighter drop-shadow-[0_2px_16px_rgba(0,0,0,0.5)] mb-4">
+                            Welcome to <span className="text-transparent bg-clip-text bg-gradient-to-r from-slate-900 dark:from-white via-indigo-400 to-slate-600 dark:to-slate-400">Trackify</span>
                         </h1>
-                        <p className="text-xl md:text-2xl text-slate-800 font-semibold max-w-2xl drop-shadow-[0_1px_6px_rgba(0,0,0,0.4)]">
+                        <p className="text-xl md:text-2xl text-slate-700 dark:text-slate-300 font-semibold max-w-2xl drop-shadow-[0_1px_6px_rgba(0,0,0,0.4)]">
                             Master your finances with beautiful visualizations and intelligent tracking.
                         </p>
                     </div>
@@ -493,28 +493,28 @@ export default function Dashboard() {
 
                 {/* Summary Cards */}
                 <motion.div initial="hidden" animate="visible" variants={{ hidden: { opacity: 0 }, visible: { opacity: 1, transition: { staggerChildren: 0.1 } } }} className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12 relative z-20">
-                    <motion.div variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0 }, hover: { scale: 1.02 } }} className="glass rounded-3xl p-6 shadow-xl shadow-slate-200/50 border border-slate-200 hover:-translate-y-1 transition-transform">
+                    <motion.div variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0 }, hover: { scale: 1.02 } }} className="glass-panel rounded-3xl p-6 shadow-xl shadow-indigo-500/10 border border-slate-300 dark:border-white/10 hover:-translate-y-1 transition-transform">
                         <div className="flex items-center justify-between mb-4">
-                            <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider">Total Income</h3>
-                            <div className="p-2 bg-emerald-100 text-emerald-600 rounded-lg"><PlusCircle size={20} /></div>
+                            <h3 className="text-sm font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">Total Income</h3>
+                            <div className="p-2 bg-emerald-900/30 text-emerald-600 rounded-lg"><PlusCircle size={20} /></div>
                         </div>
-                        <p className="text-4xl font-black text-slate-900">{formatCurrency(analytics?.total_income)}</p>
+                        <p className="text-4xl font-black text-slate-900 dark:text-white">{formatCurrency(analytics?.total_income)}</p>
                     </motion.div>
-                    <motion.div variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0 }, hover: { scale: 1.02 } }} className="glass rounded-3xl p-6 shadow-xl shadow-slate-200/50 border border-slate-200 hover:-translate-y-1 transition-transform">
+                    <motion.div variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0 }, hover: { scale: 1.02 } }} className="glass-panel rounded-3xl p-6 shadow-xl shadow-indigo-500/10 border border-slate-300 dark:border-white/10 hover:-translate-y-1 transition-transform">
                         <div className="flex items-center justify-between mb-4">
-                            <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider">Total Expenses</h3>
-                            <div className="p-2 bg-red-100 text-red-600 rounded-lg"><MinusCircle size={20} /></div>
+                            <h3 className="text-sm font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">Total Expenses</h3>
+                            <div className="p-2 bg-red-900/30 text-red-600 rounded-lg"><MinusCircle size={20} /></div>
                         </div>
-                        <p className="text-4xl font-black text-slate-900">{formatCurrency(analytics?.total_expenses)}</p>
+                        <p className="text-4xl font-black text-slate-900 dark:text-white">{formatCurrency(analytics?.total_expenses)}</p>
                         {budget && (
-                            <div className="mt-4 pt-4 border-t border-white/10/50">
+                            <div className="mt-4 pt-4 border-t border-slate-300 dark:border-white/10/50">
                                 <div className="flex justify-between text-xs font-bold mb-1">
-                                    <span className="text-slate-600">Budget Limit</span>
+                                    <span className="text-slate-600 dark:text-slate-400">Budget Limit</span>
                                     <span className={analytics?.total_expenses > budget ? 'text-red-600' : 'text-emerald-600'}>
                                         {((analytics?.total_expenses / budget) * 100).toFixed(0)}%
                                     </span>
                                 </div>
-                                <div className="h-2 w-full bg-slate-200 rounded-full overflow-hidden">
+                                <div className="h-2 w-full bg-white/10 rounded-full overflow-hidden">
                                     <div
                                         className={`h-full ${analytics?.total_expenses > budget ? 'bg-red-500' : 'bg-indigo-600'}`}
                                         style={{ width: `${Math.min((analytics?.total_expenses / budget) * 100, 100)}%` }}
@@ -523,10 +523,10 @@ export default function Dashboard() {
                             </div>
                         )}
                     </motion.div>
-                    <motion.div variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0 }, hover: { scale: 1.02 } }} className="glass rounded-3xl p-6 shadow-xl shadow-slate-200/50 border border-slate-200 hover:-translate-y-1 transition-transform">
+                    <motion.div variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0 }, hover: { scale: 1.02 } }} className="glass-panel rounded-3xl p-6 shadow-xl shadow-indigo-500/10 border border-slate-300 dark:border-white/10 hover:-translate-y-1 transition-transform">
                         <div className="flex items-center justify-between mb-4">
-                            <h3 className="text-sm font-bold text-slate-600 uppercase tracking-wider">Net Savings</h3>
-                            <div className="p-2 bg-indigo-100 text-indigo-600 rounded-lg"><Wallet size={20} /></div>
+                            <h3 className="text-sm font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">Net Savings</h3>
+                            <div className="p-2 bg-indigo-900/30 text-indigo-600 rounded-lg"><Wallet size={20} /></div>
                         </div>
                         <p className={`text-4xl font-black ${(analytics?.total_income - analytics?.total_expenses) >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
                             {formatCurrency(Math.max(0, (analytics?.total_income || 0) - (analytics?.total_expenses || 0)))}
@@ -538,30 +538,30 @@ export default function Dashboard() {
                     {/* Forms Section */}
                     <div className="space-y-8">
                         {/* Transaction Form */}
-                        <div className="glass rounded-3xl p-8 shadow-xl shadow-slate-200/50 border border-slate-200">
-                            <h3 className="text-xl font-bold text-slate-900 mb-6 flex items-center gap-2">
+                        <div className="glass-panel rounded-3xl p-8 shadow-xl shadow-indigo-500/10 border border-slate-300 dark:border-white/10">
+                            <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-6 flex items-center gap-2">
                                 <Activity className="text-indigo-600" size={24} /> Add Transaction
                             </h3>
                             <form onSubmit={handleTransactionSubmit} className="space-y-4">
-                                <div className="flex bg-slate-100/50 p-1 rounded-xl">
+                                <div className="flex bg-slate-50/40 dark:bg-dark-bg/40 p-1 rounded-xl">
                                     <button
                                         type="button"
                                         onClick={() => setType('income')}
-                                        className={`flex-1 py-2 text-sm font-bold rounded-lg transition-all ${type === 'income' ? 'bg-slate-50 text-emerald-600 shadow-sm' : 'text-slate-600 hover:text-slate-800'}`}
+                                        className={`flex-1 py-2 text-sm font-bold rounded-lg transition-all ${type === 'income' ? 'bg-slate-50/50 dark:bg-dark-bg/50 text-emerald-600 shadow-sm' : 'text-slate-600 dark:text-slate-400 hover:text-slate-700 dark:text-slate-300'}`}
                                     >
                                         Salary (Income)
                                     </button>
                                     <button
                                         type="button"
                                         onClick={() => setType('expense')}
-                                        className={`flex-1 py-2 text-sm font-bold rounded-lg transition-all ${type === 'expense' ? 'bg-slate-50 text-red-600 shadow-sm' : 'text-slate-600 hover:text-slate-800'}`}
+                                        className={`flex-1 py-2 text-sm font-bold rounded-lg transition-all ${type === 'expense' ? 'bg-slate-50/50 dark:bg-dark-bg/50 text-red-600 shadow-sm' : 'text-slate-600 dark:text-slate-400 hover:text-slate-700 dark:text-slate-300'}`}
                                     >
                                         Debit (Expense)
                                     </button>
                                 </div>
 
                                 <div>
-                                    <label className="block text-xs font-bold text-slate-600 mb-1 uppercase tracking-wider">Amount (₹)</label>
+                                    <label className="block text-xs font-bold text-slate-600 dark:text-slate-400 mb-1 uppercase tracking-wider">Amount (₹)</label>
                                     <input
                                         type="number"
                                         required
@@ -569,42 +569,42 @@ export default function Dashboard() {
                                         step="0.01"
                                         value={amount}
                                         onChange={(e) => setAmount(e.target.value)}
-                                        className="w-full px-4 py-3 rounded-xl border-none bg-white border border-slate-200 focus:ring-2 focus:ring-indigo-500/30 font-medium text-slate-800 placeholder-slate-400"
+                                        className="w-full px-4 py-3 rounded-xl border-none bg-white dark:bg-dark-card border border-slate-300 dark:border-white/10 focus:ring-2 focus:ring-indigo-500/30 font-medium text-slate-700 dark:text-slate-300 placeholder-slate-400"
                                         placeholder="0.00"
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-xs font-bold text-slate-600 mb-1 uppercase tracking-wider">Category</label>
+                                    <label className="block text-xs font-bold text-slate-600 dark:text-slate-400 mb-1 uppercase tracking-wider">Category</label>
                                     <input
                                         type="text"
                                         required
                                         value={category}
                                         onChange={(e) => setCategory(e.target.value)}
-                                        className="w-full px-4 py-3 rounded-xl border-none bg-white border border-slate-200 focus:ring-2 focus:ring-indigo-500/30 font-medium text-slate-800 placeholder-slate-400"
+                                        className="w-full px-4 py-3 rounded-xl border-none bg-white dark:bg-dark-card border border-slate-300 dark:border-white/10 focus:ring-2 focus:ring-indigo-500/30 font-medium text-slate-700 dark:text-slate-300 placeholder-slate-400"
                                         placeholder={type === 'income' ? 'e.g. Salary, Freelance' : 'e.g. Groceries, Rent'}
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-xs font-bold text-slate-600 mb-1 uppercase tracking-wider">Description</label>
+                                    <label className="block text-xs font-bold text-slate-600 dark:text-slate-400 mb-1 uppercase tracking-wider">Description</label>
                                     <input
                                         type="text"
                                         value={description}
                                         onChange={(e) => setDescription(e.target.value)}
-                                        className="w-full px-4 py-3 rounded-xl border-none bg-white border border-slate-200 focus:ring-2 focus:ring-indigo-500/30 font-medium text-slate-800 placeholder-slate-400"
+                                        className="w-full px-4 py-3 rounded-xl border-none bg-white dark:bg-dark-card border border-slate-300 dark:border-white/10 focus:ring-2 focus:ring-indigo-500/30 font-medium text-slate-700 dark:text-slate-300 placeholder-slate-400"
                                         placeholder="Optional notes"
                                     />
                                 </div>
 
-                                <button type="submit" className={`w-full py-3 rounded-xl font-bold text-slate-900 shadow-lg transform transition hover:-translate-y-0.5 ${type === 'income' ? 'bg-emerald-500 hover:bg-emerald-600 shadow-sm' : 'bg-red-500 hover:bg-red-600 shadow-sm'}`}>
+                                <button type="submit" className={`w-full py-3 rounded-xl font-bold text-slate-900 dark:text-white shadow-lg transform transition hover:-translate-y-0.5 ${type === 'income' ? 'bg-emerald-500 hover:bg-emerald-600 button-glow shadow-sm' : 'bg-red-500 hover:bg-red-600 button-glow shadow-sm'}`}>
                                     {type === 'income' ? 'Credit Account' : 'Debit Account'}
                                 </button>
                             </form>
                         </div>
 
                         {/* Recurring Expenses (EMI) Form */}
-                        <div className="glass rounded-3xl p-8 shadow-xl shadow-slate-200/50 border border-slate-200">
+                        <div className="glass-panel rounded-3xl p-8 shadow-xl shadow-indigo-500/10 border border-slate-300 dark:border-white/10">
                             <div className="flex items-center justify-between mb-6">
-                                <h3 className="text-xl font-bold text-slate-900 flex items-center gap-2">
+                                <h3 className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
                                     <Clock className="text-indigo-600" size={24} /> Recurring EMI
                                 </h3>
                                 <button
@@ -618,19 +618,19 @@ export default function Dashboard() {
                             {showRecurringForm ? (
                                 <form onSubmit={handleRecurringSubmit} className="space-y-4">
                                     <div>
-                                        <label className="block text-xs font-bold text-slate-600 mb-1 uppercase tracking-wider">EMI Amount (₹)</label>
+                                        <label className="block text-xs font-bold text-slate-600 dark:text-slate-400 mb-1 uppercase tracking-wider">EMI Amount (₹)</label>
                                         <input
                                             type="number"
                                             required
                                             value={reAmount}
                                             onChange={(e) => setReAmount(e.target.value)}
-                                            className="w-full px-4 py-3 rounded-xl border-none bg-white border border-slate-200 focus:ring-2 focus:ring-indigo-500/30 font-medium text-slate-800 placeholder-slate-400"
+                                            className="w-full px-4 py-3 rounded-xl border-none bg-white dark:bg-dark-card border border-slate-300 dark:border-white/10 focus:ring-2 focus:ring-indigo-500/30 font-medium text-slate-700 dark:text-slate-300 placeholder-slate-400"
                                             placeholder="Monthly amount"
                                         />
                                     </div>
                                     <div className="grid grid-cols-2 gap-4">
                                         <div>
-                                            <label className="block text-xs font-bold text-slate-600 mb-1 uppercase tracking-wider">Day of Month</label>
+                                            <label className="block text-xs font-bold text-slate-600 dark:text-slate-400 mb-1 uppercase tracking-wider">Day of Month</label>
                                             <input
                                                 type="number"
                                                 min="1"
@@ -638,82 +638,82 @@ export default function Dashboard() {
                                                 required
                                                 value={reDay}
                                                 onChange={(e) => setReDay(e.target.value)}
-                                                className="w-full px-4 py-3 rounded-xl border-none bg-white border border-slate-200 focus:ring-2 focus:ring-indigo-500/30 font-medium text-slate-800"
+                                                className="w-full px-4 py-3 rounded-xl border-none bg-white dark:bg-dark-card border border-slate-300 dark:border-white/10 focus:ring-2 focus:ring-indigo-500/30 font-medium text-slate-700 dark:text-slate-300"
                                             />
                                         </div>
                                         <div>
-                                            <label className="block text-xs font-bold text-slate-600 mb-1 uppercase tracking-wider">Total Months</label>
+                                            <label className="block text-xs font-bold text-slate-600 dark:text-slate-400 mb-1 uppercase tracking-wider">Total Months</label>
                                             <input
                                                 type="number"
                                                 min="1"
                                                 required
                                                 value={reMonths}
                                                 onChange={(e) => setReMonths(e.target.value)}
-                                                className="w-full px-4 py-3 rounded-xl border-none bg-white border border-slate-200 focus:ring-2 focus:ring-indigo-500/30 font-medium text-slate-800"
+                                                className="w-full px-4 py-3 rounded-xl border-none bg-white dark:bg-dark-card border border-slate-300 dark:border-white/10 focus:ring-2 focus:ring-indigo-500/30 font-medium text-slate-700 dark:text-slate-300"
                                             />
                                         </div>
                                     </div>
                                     <div>
-                                        <label className="block text-xs font-bold text-slate-600 mb-1 uppercase tracking-wider">Category</label>
+                                        <label className="block text-xs font-bold text-slate-600 dark:text-slate-400 mb-1 uppercase tracking-wider">Category</label>
                                         <input
                                             type="text"
                                             required
                                             value={reCategory}
                                             onChange={(e) => setReCategory(e.target.value)}
-                                            className="w-full px-4 py-3 rounded-xl border-none bg-white border border-slate-200 focus:ring-2 focus:ring-indigo-500/30 font-medium text-slate-800 placeholder-slate-400"
+                                            className="w-full px-4 py-3 rounded-xl border-none bg-white dark:bg-dark-card border border-slate-300 dark:border-white/10 focus:ring-2 focus:ring-indigo-500/30 font-medium text-slate-700 dark:text-slate-300 placeholder-slate-400"
                                             placeholder="e.g. Home Loan, Car EMI"
                                         />
                                     </div>
                                     <div>
-                                        <label className="block text-xs font-bold text-slate-600 mb-1 uppercase tracking-wider">Description</label>
+                                        <label className="block text-xs font-bold text-slate-600 dark:text-slate-400 mb-1 uppercase tracking-wider">Description</label>
                                         <input
                                             type="text"
                                             value={reDescription}
                                             onChange={(e) => setReDescription(e.target.value)}
-                                            className="w-full px-4 py-3 rounded-xl border-none bg-white border border-slate-200 focus:ring-2 focus:ring-indigo-500/30 font-medium text-slate-800 placeholder-slate-400"
+                                            className="w-full px-4 py-3 rounded-xl border-none bg-white dark:bg-dark-card border border-slate-300 dark:border-white/10 focus:ring-2 focus:ring-indigo-500/30 font-medium text-slate-700 dark:text-slate-300 placeholder-slate-400"
                                             placeholder="Optional details"
                                         />
                                     </div>
-                                    <button type="submit" className="w-full py-3 bg-indigo-500 hover:bg-indigo-600 rounded-xl font-bold text-slate-900 shadow-lg shadow-sm transform transition hover:-translate-y-0.5">
+                                    <button type="submit" className="w-full py-3 bg-indigo-500 hover:bg-indigo-600 button-glow rounded-xl font-bold text-slate-900 dark:text-white shadow-lg shadow-sm transform transition hover:-translate-y-0.5">
                                         Set Recurring EMI
                                     </button>
                                 </form>
                             ) : (
-                                <p className="text-sm text-slate-500 italic">Setup an EMI to automatically track monthly deductions.</p>
+                                <p className="text-sm text-slate-600 dark:text-slate-400 italic">Setup an EMI to automatically track monthly deductions.</p>
                             )}
 
                             {/* Budget Form */}
-                            <div className="glass rounded-3xl p-8 shadow-xl shadow-slate-200/50 border border-slate-200 bg-gradient-to-br from-indigo-50/50 to-purple-50/50">
-                                <h3 className="text-xl font-bold text-slate-900 mb-6 flex items-center gap-2">
+                            <div className="glass-panel rounded-3xl p-8 shadow-xl shadow-indigo-500/10 border border-slate-300 dark:border-white/10 bg-gradient-to-br from-indigo-900/30 to-purple-900/30">
+                                <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-6 flex items-center gap-2">
                                     <Target className="text-purple-600" size={24} /> Set Debit Limit
                                 </h3>
                                 <form onSubmit={handleBudgetSubmit} className="space-y-4">
                                     <div>
-                                        <label className="block text-xs font-bold text-slate-600 mb-1 uppercase tracking-wider">Monthly Budget (₹)</label>
+                                        <label className="block text-xs font-bold text-slate-600 dark:text-slate-400 mb-1 uppercase tracking-wider">Monthly Budget (₹)</label>
                                         <input
                                             type="number"
                                             required
                                             min="1"
                                             value={budgetLimit}
                                             onChange={(e) => setBudgetLimit(e.target.value)}
-                                            className="w-full px-4 py-3 rounded-xl border-none bg-white border border-slate-200 focus:ring-2 focus:ring-purple-500/30 font-medium text-slate-800 placeholder-slate-400"
+                                            className="w-full px-4 py-3 rounded-xl border-none bg-white dark:bg-dark-card border border-slate-300 dark:border-white/10 focus:ring-2 focus:ring-purple-500/30 font-medium text-slate-700 dark:text-slate-300 placeholder-slate-400"
                                             placeholder={budget ? formatCurrency(budget) : "0.00"}
                                         />
                                     </div>
-                                    <button type="submit" className="w-full py-3 rounded-xl font-bold text-slate-900 bg-purple-600 hover:bg-purple-700 shadow-lg shadow-purple-600/30 transform transition hover:-translate-y-0.5">
+                                    <button type="submit" className="w-full py-3 rounded-xl font-bold text-slate-900 dark:text-white bg-purple-600 hover:bg-purple-700 button-glow shadow-lg shadow-purple-600/30 transform transition hover:-translate-y-0.5">
                                         {budget ? 'Update Limit' : 'Set Limit'}
                                     </button>
                                 </form>
                             </div>
 
                             {/* Statement Upload */}
-                            <div className="glass rounded-3xl p-8 shadow-xl shadow-slate-200/50 border border-slate-200">
-                                <h3 className="text-xl font-bold text-slate-900 mb-4 flex items-center gap-2">
+                            <div className="glass-panel rounded-3xl p-8 shadow-xl shadow-indigo-500/10 border border-slate-300 dark:border-white/10">
+                                <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
                                     <UploadCloud className="text-blue-500" size={24} /> Smart Import
                                 </h3>
-                                <p className="text-sm text-slate-600 font-medium mb-6">Upload your bank statement PDF to automatically log your transactions.</p>
+                                <p className="text-sm text-slate-600 dark:text-slate-400 font-medium mb-6">Upload your bank statement PDF to automatically log your transactions.</p>
 
-                                <div className="relative group cursor-pointer border-2 border-dashed border-white/10 rounded-2xl p-6 text-center hover:bg-white/80 hover:border-indigo-400 transition-colors" onClick={() => fileInputRef.current?.click()}>
+                                <div className="relative group cursor-pointer border-2 border-dashed border-slate-300 dark:border-white/10 rounded-2xl p-6 text-center hover:bg-white/60 dark:bg-dark-card/60 hover:border-indigo-400 transition-colors" onClick={() => fileInputRef.current?.click()}>
                                     <input
                                         type="file"
                                         ref={fileInputRef}
@@ -721,14 +721,14 @@ export default function Dashboard() {
                                         accept="application/pdf"
                                         className="hidden"
                                     />
-                                    <UploadCloud className={`mx-auto mb-3 ${uploading ? 'text-blue-500 animate-bounce' : 'text-slate-600 group-hover:text-blue-500'}`} size={32} />
-                                    <p className="text-sm font-bold text-slate-800">
+                                    <UploadCloud className={`mx-auto mb-3 ${uploading ? 'text-blue-500 animate-bounce' : 'text-slate-600 dark:text-slate-400 group-hover:text-blue-500'}`} size={32} />
+                                    <p className="text-sm font-bold text-slate-700 dark:text-slate-300">
                                         {uploading ? 'Processing Statement...' : 'Click to Upload PDF'}
                                     </p>
                                 </div>
 
                                 {uploadMsg && (
-                                    <div className={`mt-4 p-3 rounded-xl text-sm font-bold text-center ${uploadMsg.includes('Success') ? 'bg-emerald-100 text-emerald-600' : 'bg-blue-100 text-blue-600'}`}>
+                                    <div className={`mt-4 p-3 rounded-xl text-sm font-bold text-center ${uploadMsg.includes('Success') ? 'bg-emerald-900/30 text-emerald-600' : 'bg-blue-100 text-blue-600'}`}>
                                         {uploadMsg}
                                     </div>
                                 )}
@@ -736,30 +736,30 @@ export default function Dashboard() {
 
                             {/* Active EMIs List */}
                             {recurringExpenses.length > 0 && (
-                                <div className="glass rounded-3xl p-8 shadow-xl shadow-slate-200/50 border border-slate-200">
-                                    <h3 className="text-xl font-bold text-slate-900 mb-6 flex items-center gap-2">
+                                <div className="glass-panel rounded-3xl p-8 shadow-xl shadow-indigo-500/10 border border-slate-300 dark:border-white/10">
+                                    <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-6 flex items-center gap-2">
                                         <Clock className="text-indigo-600" size={24} /> Active EMIs
                                     </h3>
                                     <div className="space-y-4">
                                         {recurringExpenses.map((re) => (
-                                            <div key={re.id} className="p-4 bg-white/80 rounded-2xl border border-slate-200">
+                                            <div key={re.id} className="p-4 bg-white/60 dark:bg-dark-card/60 rounded-2xl border border-slate-300 dark:border-white/10">
                                                 <div className="flex justify-between items-start mb-2">
                                                     <div>
-                                                        <h4 className="font-bold text-slate-900">{re.category}</h4>
-                                                        <p className="text-xs text-slate-500">{re.description}</p>
+                                                        <h4 className="font-bold text-slate-900 dark:text-white">{re.category}</h4>
+                                                        <p className="text-xs text-slate-600 dark:text-slate-400">{re.description}</p>
                                                     </div>
-                                                    <span className={`px-2 py-0.5 text-[10px] font-black uppercase rounded ${re.status === 'active' ? 'bg-emerald-100 text-emerald-600' : 'bg-slate-50 text-slate-500'}`}>
+                                                    <span className={`px-2 py-0.5 text-[10px] font-black uppercase rounded ${re.status === 'active' ? 'bg-emerald-900/30 text-emerald-600' : 'bg-slate-50/50 dark:bg-dark-bg/50 text-slate-600 dark:text-slate-400'}`}>
                                                         {re.status}
                                                     </span>
                                                 </div>
                                                 <div className="flex justify-between items-end mt-4">
-                                                    <div className="text-xs font-bold text-slate-600">
+                                                    <div className="text-xs font-bold text-slate-600 dark:text-slate-400">
                                                         <p>Progress: {re.months_paid}/{re.total_months} months</p>
                                                         <p className="mt-1 text-[10px]">Next: {new Date(re.next_deduction_date).toLocaleDateString()}</p>
                                                     </div>
-                                                    <p className="text-lg font-black text-slate-900">{formatCurrency(re.amount)}</p>
+                                                    <p className="text-lg font-black text-slate-900 dark:text-white">{formatCurrency(re.amount)}</p>
                                                 </div>
-                                                <div className="h-1.5 w-full bg-slate-50 rounded-full mt-3 overflow-hidden">
+                                                <div className="h-1.5 w-full bg-slate-50/50 dark:bg-dark-bg/50 rounded-full mt-3 overflow-hidden">
                                                     <div
                                                         className="h-full bg-indigo-500"
                                                         style={{ width: `${(re.months_paid / re.total_months) * 100}%` }}
@@ -777,27 +777,27 @@ export default function Dashboard() {
                     <div className="lg:col-span-2 space-y-8">
                         {/* Smart Financial Advice */}
                         {analytics?.financial_advice && analytics.financial_advice.length > 0 && (
-                            <div className="glass rounded-3xl p-8 shadow-xl shadow-slate-200/50 border border-slate-200 bg-gradient-to-r from-indigo-50/80 to-emerald-50/80 relative overflow-hidden">
-                                <div className="absolute top-0 right-0 w-64 h-64 bg-white/80 rounded-full blur-3xl -mr-20 -mt-20 pointer-events-none"></div>
-                                <h3 className="text-2xl font-black text-slate-900 mb-6 tracking-tight flex items-center gap-3">
+                            <div className="glass-panel rounded-3xl p-8 shadow-xl shadow-indigo-500/10 border border-slate-300 dark:border-white/10 bg-gradient-to-r from-indigo-900/40 to-emerald-900/40 relative overflow-hidden">
+                                <div className="absolute top-0 right-0 w-64 h-64 bg-white/60 dark:bg-dark-card/60 rounded-full blur-3xl -mr-20 -mt-20 pointer-events-none"></div>
+                                <h3 className="text-2xl font-black text-slate-900 dark:text-white mb-6 tracking-tight flex items-center gap-3">
                                     <Sparkles className="text-amber-400" size={28} /> AI Financial Advisor
                                 </h3>
                                 <div className="space-y-4 relative z-10">
                                     {analytics.financial_advice.map((advice, index) => {
-                                        let bgColor = 'bg-slate-50';
-                                        let borderColor = 'border-slate-200';
+                                        let bgColor = 'bg-slate-50/50 dark:bg-dark-bg/50';
+                                        let borderColor = 'border-slate-300 dark:border-white/10';
                                         let icon = '💡';
                                         
                                         if (advice.startsWith('Alert:') || advice.startsWith('Warning:')) {
-                                            bgColor = 'bg-red-100';
+                                            bgColor = 'bg-red-900/30';
                                             borderColor = 'border-red-500/30';
                                             icon = '⚠️';
                                         } else if (advice.startsWith('Great job!')) {
-                                            bgColor = 'bg-emerald-100';
+                                            bgColor = 'bg-emerald-900/30';
                                             borderColor = 'border-emerald-500/30';
                                             icon = '🎉';
                                         } else if (advice.startsWith('Caution:')) {
-                                            bgColor = 'bg-amber-100';
+                                            bgColor = 'bg-amber-900/30';
                                             borderColor = 'border-amber-500/30';
                                             icon = '⚡';
                                         }
@@ -805,7 +805,7 @@ export default function Dashboard() {
                                         return (
                                             <div key={index} className={`p-4 rounded-2xl border ${borderColor} ${bgColor} flex items-start gap-4 transition-transform hover:-translate-y-1`}>
                                                 <span className="text-2xl mt-1">{icon}</span>
-                                                <p className="text-slate-800 font-medium leading-relaxed">{advice}</p>
+                                                <p className="text-slate-700 dark:text-slate-300 font-medium leading-relaxed">{advice}</p>
                                             </div>
                                         );
                                     })}
@@ -814,18 +814,18 @@ export default function Dashboard() {
                         )}
 
                         {/* Visualizations Container */}
-                        <div id="charts-to-capture" className="glass rounded-3xl p-8 shadow-xl shadow-slate-200/50 border border-slate-200">
-                            <h3 className="text-2xl font-black text-slate-900 mb-8 tracking-tight">Financial Insights</h3>
+                        <div id="charts-to-capture" className="glass-panel rounded-3xl p-8 shadow-xl shadow-indigo-500/10 border border-slate-300 dark:border-white/10">
+                            <h3 className="text-2xl font-black text-slate-900 dark:text-white mb-8 tracking-tight">Financial Insights</h3>
 
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                                     {/* Summary Bar Chart */}
                                     <div className="h-64 flex flex-col items-center">
-                                        <h4 className="text-sm font-bold text-slate-600 mb-4 uppercase tracking-wider">Income vs Expenses</h4>
+                                        <h4 className="text-sm font-bold text-slate-600 dark:text-slate-400 mb-4 uppercase tracking-wider">Income vs Expenses</h4>
                                         <ResponsiveContainer width="100%" height="80%">
                                             <BarChart data={barData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
                                                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-                                                <XAxis dataKey="name" tick={{ fill: '#f8fafc', fontSize: 12, fontWeight: 700 }} axisLine={false} tickLine={false} />
-                                                <YAxis tickFormatter={(val) => `₹${val / 1000}k`} tick={{ fill: '#f8fafc', fontSize: 12 }} axisLine={false} tickLine={false} />
+                                                <XAxis dataKey="name" tick={{ fill: '#94a3b8', fontSize: 12, fontWeight: 700 }} axisLine={false} tickLine={false} />
+                                                <YAxis tickFormatter={(val) => `₹${val / 1000}k`} tick={{ fill: '#94a3b8', fontSize: 12 }} axisLine={false} tickLine={false} />
                                                 <Tooltip
                                                     formatter={(value) => formatCurrency(value)}
                                                     contentStyle={{ borderRadius: '1rem', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)', padding: '12px' }}
@@ -841,7 +841,7 @@ export default function Dashboard() {
 
                                     {/* Category Pie Chart */}
                                     <div className="h-64 flex flex-col items-center">
-                                        <h4 className="text-sm font-bold text-slate-600 mb-4 uppercase tracking-wider">Expenses by Category</h4>
+                                        <h4 className="text-sm font-bold text-slate-600 dark:text-slate-400 mb-4 uppercase tracking-wider">Expenses by Category</h4>
                                         {pieData.length > 0 ? (
                                             <ResponsiveContainer width={200} height={200}>
                                                 <PieChart>
@@ -862,7 +862,7 @@ export default function Dashboard() {
                                                 </PieChart>
                                             </ResponsiveContainer>
                                         ) : (
-                                            <div className="flex-1 flex items-center justify-center text-slate-600 font-medium text-sm">
+                                            <div className="flex-1 flex items-center justify-center text-slate-600 dark:text-slate-400 font-medium text-sm">
                                                 No expense data yet
                                             </div>
                                         )}
@@ -876,30 +876,30 @@ export default function Dashboard() {
                             </div>
 
                             {/* Recent Transactions List */}
-                            <div className="glass rounded-3xl p-8 shadow-xl shadow-slate-200/50 border border-slate-200">
-                                <h3 className="text-xl font-bold text-slate-900 mb-6">Recent Transactions</h3>
+                            <div className="glass-panel rounded-3xl p-8 shadow-xl shadow-indigo-500/10 border border-slate-300 dark:border-white/10">
+                                <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-6">Recent Transactions</h3>
 
                                 {transactions.length === 0 ? (
-                                    <div className="text-center py-10 border-white/10 rounded-2xl border border-dashed border-white/10">
-                                        <p className="text-slate-600 font-medium">No transactions recorded yet.</p>
+                                    <div className="text-center py-10 border-slate-300 dark:border-white/10 rounded-2xl border border-dashed border-slate-300 dark:border-white/10">
+                                        <p className="text-slate-600 dark:text-slate-400 font-medium">No transactions recorded yet.</p>
                                     </div>
                                 ) : (
                                     <div className="space-y-4">
                                         {transactions.slice(0, 10).map((t) => (
-                                            <div key={t.id} className="flex items-center justify-between p-4 bg-slate-100/50 rounded-2xl hover:bg-slate-50/10 transition-colors">
+                                            <div key={t.id} className="flex items-center justify-between p-4 bg-slate-50/40 dark:bg-dark-bg/40 rounded-2xl hover:bg-slate-50/70 dark:hover:bg-dark-bg/70 transition-colors">
                                                 <div className="flex items-center gap-4">
-                                                    <div className={`p-3 rounded-xl ${t.type === 'income' ? 'bg-emerald-100 text-emerald-600' : 'bg-red-100 text-red-600'}`}>
+                                                    <div className={`p-3 rounded-xl ${t.type === 'income' ? 'bg-emerald-900/30 text-emerald-600' : 'bg-red-900/30 text-red-600'}`}>
                                                         {t.type === 'income' ? <PlusCircle size={20} /> : <MinusCircle size={20} />}
                                                     </div>
                                                     <div>
-                                                        <p className="font-bold text-slate-900">{t.category}</p>
-                                                        <p className="text-xs text-slate-600 font-medium">
+                                                        <p className="font-bold text-slate-900 dark:text-white">{t.category}</p>
+                                                        <p className="text-xs text-slate-600 dark:text-slate-400 font-medium">
                                                             {new Date(t.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
                                                             {t.description && ` • ${t.description}`}
                                                         </p>
                                                     </div>
                                                 </div>
-                                                <p className={`font-black tracking-tight ${t.type === 'income' ? 'text-emerald-600' : 'text-slate-900'}`}>
+                                                <p className={`font-black tracking-tight ${t.type === 'income' ? 'text-emerald-600' : 'text-slate-900 dark:text-white'}`}>
                                                     {t.type === 'income' ? '+' : '-'}{formatCurrency(t.amount)}
                                                 </p>
                                             </div>
@@ -915,9 +915,9 @@ export default function Dashboard() {
                         <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-8">
 
                             {/* Weekly Spending Pattern */}
-                            <div className="glass rounded-3xl p-6 shadow-xl shadow-slate-200/50 border border-slate-200">
-                                <h3 className="text-base font-black text-slate-900 mb-1 tracking-tight">Weekly Pattern</h3>
-                                <p className="text-xs text-slate-600 font-medium mb-4">Expenses by day of week</p>
+                            <div className="glass-panel rounded-3xl p-6 shadow-xl shadow-indigo-500/10 border border-slate-300 dark:border-white/10">
+                                <h3 className="text-base font-black text-slate-900 dark:text-white mb-1 tracking-tight">Weekly Pattern</h3>
+                                <p className="text-xs text-slate-600 dark:text-slate-400 font-medium mb-4">Expenses by day of week</p>
                                 <ResponsiveContainer width="100%" height={180}>
                                     <BarChart data={weeklyData} margin={{ top: 4, right: 0, left: -28, bottom: 0 }} barCategoryGap="30%">
                                         <XAxis dataKey="day" tick={{ fill: '#94a3b8', fontSize: 11, fontWeight: 700 }} axisLine={false} tickLine={false} />
@@ -934,20 +934,20 @@ export default function Dashboard() {
                                         </Bar>
                                     </BarChart>
                                 </ResponsiveContainer>
-                                <p className="text-[10px] text-center text-slate-600 font-semibold mt-1 uppercase tracking-wider">
+                                <p className="text-[10px] text-center text-slate-600 dark:text-slate-400 font-semibold mt-1 uppercase tracking-wider">
                                     <span className="inline-flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-red-500 inline-block"></span>Highest spend day</span>
                                 </p>
                             </div>
 
                             {/* Top Expense Categories */}
-                            <div className="glass rounded-3xl p-6 shadow-xl shadow-slate-200/50 border border-slate-200">
-                                <h3 className="text-base font-black text-slate-900 mb-1 tracking-tight">Top Categories</h3>
-                                <p className="text-xs text-slate-600 font-medium mb-4">Where your money goes</p>
+                            <div className="glass-panel rounded-3xl p-6 shadow-xl shadow-indigo-500/10 border border-slate-300 dark:border-white/10">
+                                <h3 className="text-base font-black text-slate-900 dark:text-white mb-1 tracking-tight">Top Categories</h3>
+                                <p className="text-xs text-slate-600 dark:text-slate-400 font-medium mb-4">Where your money goes</p>
                                 {topCategories.length > 0 ? (
                                     <ResponsiveContainer width="100%" height={180}>
                                         <BarChart data={topCategories} layout="vertical" margin={{ top: 0, right: 10, left: 0, bottom: 0 }}>
                                             <XAxis type="number" hide />
-                                            <YAxis type="category" dataKey="name" tick={{ fill: '#f8fafc', fontSize: 11, fontWeight: 600 }} axisLine={false} tickLine={false} width={72} />
+                                            <YAxis type="category" dataKey="name" tick={{ fill: '#94a3b8', fontSize: 11, fontWeight: 600 }} axisLine={false} tickLine={false} width={72} />
                                             <Tooltip
                                                 formatter={(v) => [formatCurrency(v), 'Spent']}
                                                 contentStyle={{ borderRadius: '0.75rem', border: 'none', boxShadow: '0 10px 25px rgba(0,0,0,0.1)', padding: '8px 14px', fontSize: 12 }}
@@ -960,14 +960,14 @@ export default function Dashboard() {
                                         </BarChart>
                                     </ResponsiveContainer>
                                 ) : (
-                                    <div className="flex items-center justify-center h-44 text-slate-600 text-sm font-medium">No expense data yet</div>
+                                    <div className="flex items-center justify-center h-44 text-slate-600 dark:text-slate-400 text-sm font-medium">No expense data yet</div>
                                 )}
                             </div>
 
                             {/* Savings Rate Gauge */}
-                            <div className="glass rounded-3xl p-6 shadow-xl shadow-slate-200/50 border border-slate-200 flex flex-col">
-                                <h3 className="text-base font-black text-slate-900 mb-1 tracking-tight">Savings Rate</h3>
-                                <p className="text-xs text-slate-600 font-medium mb-2">% of income saved</p>
+                            <div className="glass-panel rounded-3xl p-6 shadow-xl shadow-indigo-500/10 border border-slate-300 dark:border-white/10 flex flex-col">
+                                <h3 className="text-base font-black text-slate-900 dark:text-white mb-1 tracking-tight">Savings Rate</h3>
+                                <p className="text-xs text-slate-600 dark:text-slate-400 font-medium mb-2">% of income saved</p>
                                 <div className="flex-1 flex items-center justify-center relative">
                                     <ResponsiveContainer width="100%" height={180}>
                                         <RadialBarChart
@@ -995,7 +995,7 @@ export default function Dashboard() {
                                         <span className={`text-3xl font-black tabular-nums ${savingsRate >= 20 ? 'text-indigo-600' : savingsRate >= 0 ? 'text-amber-500' : 'text-red-500'}`}>
                                             {savingsRate}%
                                         </span>
-                                        <span className="text-[10px] font-bold text-slate-600 uppercase tracking-wider">Saved</span>
+                                        <span className="text-[10px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">Saved</span>
                                     </div>
                                 </div>
                                 <p className={`text-xs text-center font-bold mt-1 ${savingsRate >= 20 ? 'text-indigo-500' : savingsRate >= 0 ? 'text-amber-500' : 'text-red-500'}`}>
@@ -1009,9 +1009,9 @@ export default function Dashboard() {
                 {dailyTrendData.length > 0 && (
                     <div className="mt-8 space-y-8">
                         {/* Daily Income vs Expense Line Chart */}
-                        <div className="glass rounded-3xl p-8 shadow-xl shadow-slate-200/50 border border-slate-200">
-                            <h3 className="text-2xl font-black text-slate-900 mb-2 tracking-tight">Spending Trends</h3>
-                            <p className="text-sm text-slate-600 font-medium mb-8">Daily income &amp; expense activity over time</p>
+                        <div className="glass-panel rounded-3xl p-8 shadow-xl shadow-indigo-500/10 border border-slate-300 dark:border-white/10">
+                            <h3 className="text-2xl font-black text-slate-900 dark:text-white mb-2 tracking-tight">Spending Trends</h3>
+                            <p className="text-sm text-slate-600 dark:text-slate-400 font-medium mb-8">Daily income &amp; expense activity over time</p>
                             <ResponsiveContainer width="100%" height={280}>
                                 <ComposedChart data={dailyTrendData} margin={{ top: 10, right: 20, left: 10, bottom: 0 }}>
                                     <defs>
@@ -1038,19 +1038,19 @@ export default function Dashboard() {
                                 </ComposedChart>
                             </ResponsiveContainer>
                             <div className="flex items-center justify-center gap-6 mt-4">
-                                <span className="flex items-center gap-2 text-sm font-semibold text-slate-600">
+                                <span className="flex items-center gap-2 text-sm font-semibold text-slate-600 dark:text-slate-400">
                                     <span className="w-3 h-3 rounded-full bg-emerald-500 inline-block"></span> Income
                                 </span>
-                                <span className="flex items-center gap-2 text-sm font-semibold text-slate-600">
+                                <span className="flex items-center gap-2 text-sm font-semibold text-slate-600 dark:text-slate-400">
                                     <span className="w-3 h-3 rounded-full bg-red-500 inline-block"></span> Expenses
                                 </span>
                             </div>
                         </div>
 
                         {/* Cumulative Net Savings Area Chart */}
-                        <div className="glass rounded-3xl p-8 shadow-xl shadow-slate-200/50 border border-slate-200 bg-gradient-to-br from-indigo-500/5 to-blue-500/5">
-                            <h3 className="text-2xl font-black text-slate-900 mb-2 tracking-tight">Cumulative Savings</h3>
-                            <p className="text-sm text-slate-600 font-medium mb-8">Your running net savings growth over time</p>
+                        <div className="glass-panel rounded-3xl p-8 shadow-xl shadow-indigo-500/10 border border-slate-300 dark:border-white/10 bg-gradient-to-br from-indigo-500/5 to-blue-500/5">
+                            <h3 className="text-2xl font-black text-slate-900 dark:text-white mb-2 tracking-tight">Cumulative Savings</h3>
+                            <p className="text-sm text-slate-600 dark:text-slate-400 font-medium mb-8">Your running net savings growth over time</p>
                             <ResponsiveContainer width="100%" height={240}>
                                 <AreaChart data={cumulativeData} margin={{ top: 10, right: 20, left: 10, bottom: 0 }}>
                                     <defs>
