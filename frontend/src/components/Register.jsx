@@ -54,8 +54,8 @@ export default function Register() {
                             <span className="text-3xl font-black text-brand tracking-tighter">Tr</span>
                         </div>
                     </div>
-                    <h2 className="text-4xl font-extrabold text-white mb-2">Create Account</h2>
-                    <p className="text-white/80 font-semibold">Join Trackify to manage your expenses.</p>
+                    <h2 className="text-4xl font-extrabold text-slate-900 mb-2">Create Account</h2>
+                    <p className="text-slate-900/80 font-semibold">Join Trackify to manage your expenses.</p>
                 </div>
 
                 {error && (
@@ -66,34 +66,34 @@ export default function Register() {
 
                 <form onSubmit={handleSubmit} className="space-y-5">
                     <div className="group">
-                        <label className="block text-sm font-bold text-white mb-2">Full Name</label>
+                        <label className="block text-sm font-bold text-slate-900 mb-2">Full Name</label>
                         <input
                             type="text"
                             required
                             placeholder="John Doe"
-                            className="w-full px-5 py-3 rounded-xl border border-white/20 focus:ring-4 focus:ring-brand/20 focus:border-brand outline-none transition-all bg-white/10 shadow-sm text-white placeholder-white/50 group-hover:bg-white/20"
+                            className="w-full px-5 py-3 rounded-xl border border-slate-200 focus:ring-4 focus:ring-brand/20 focus:border-brand outline-none transition-all bg-slate-50 shadow-sm text-slate-900 placeholder-white/50 group-hover:bg-white/20"
                             value={name}
                             onChange={(e) => setName(e.target.value)}
                         />
                     </div>
                     <div className="group">
-                        <label className="block text-sm font-bold text-white mb-2">Email Address</label>
+                        <label className="block text-sm font-bold text-slate-900 mb-2">Email Address</label>
                         <input
                             type="email"
                             required
                             placeholder="you@example.com"
-                            className="w-full px-5 py-3 rounded-xl border border-white/20 focus:ring-4 focus:ring-brand/20 focus:border-brand outline-none transition-all bg-white/10 shadow-sm text-white placeholder-white/50 group-hover:bg-white/20"
+                            className="w-full px-5 py-3 rounded-xl border border-slate-200 focus:ring-4 focus:ring-brand/20 focus:border-brand outline-none transition-all bg-slate-50 shadow-sm text-slate-900 placeholder-white/50 group-hover:bg-white/20"
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
                         />
                     </div>
                     <div className="group">
-                        <label className="block text-sm font-bold text-white mb-2">Password</label>
+                        <label className="block text-sm font-bold text-slate-900 mb-2">Password</label>
                         <input
                             type="password"
                             required
                             placeholder="••••••••"
-                            className="w-full px-5 py-3 rounded-xl border border-white/20 focus:ring-4 focus:ring-brand/20 focus:border-brand outline-none transition-all bg-white/10 shadow-sm text-white placeholder-white/50 group-hover:bg-white/20"
+                            className="w-full px-5 py-3 rounded-xl border border-slate-200 focus:ring-4 focus:ring-brand/20 focus:border-brand outline-none transition-all bg-slate-50 shadow-sm text-slate-900 placeholder-white/50 group-hover:bg-white/20"
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
                         />
@@ -101,7 +101,7 @@ export default function Register() {
                     <button
                         type="submit"
                         disabled={loading}
-                        className="w-full mt-2 py-3.5 px-4 bg-brand hover:bg-brand-dark overflow-hidden relative text-white rounded-xl font-bold shadow-[0_8px_30px_rgb(59,130,246,0.3)] transform transition-all duration-300 hover:-translate-y-1 active:scale-95 group disabled:opacity-70 disabled:hover:translate-y-0"
+                        className="w-full mt-2 py-3.5 px-4 bg-indigo-600 hover:bg-indigo-600-dark overflow-hidden relative text-slate-900 rounded-xl font-bold shadow-[0_8px_30px_rgb(59,130,246,0.3)] transform transition-all duration-300 hover:-translate-y-1 active:scale-95 group disabled:opacity-70 disabled:hover:translate-y-0"
                     >
                         <span className="absolute w-full h-full bg-white/20 -left-full top-0 group-hover:animate-[shimmer_1s_infinite]"></span>
                         {loading ? 'Creating...' : 'Sign Up'}
@@ -109,9 +109,9 @@ export default function Register() {
                 </form>
 
                 <div className="mt-8 flex items-center justify-between">
-                    <span className="border-b border-white/20 w-1/5 lg:w-1/4"></span>
-                    <span className="text-xs font-bold text-white/60 uppercase tracking-wider">Or continue with</span>
-                    <span className="border-b border-white/20 w-1/5 lg:w-1/4"></span>
+                    <span className="border-b border-slate-200 w-1/5 lg:w-1/4"></span>
+                    <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Or continue with</span>
+                    <span className="border-b border-slate-200 w-1/5 lg:w-1/4"></span>
                 </div>
 
                 <div className="mt-6 flex justify-center">
@@ -126,7 +126,7 @@ export default function Register() {
                     />
                 </div>
 
-                <p className="mt-8 text-center text-sm font-semibold text-white/80">
+                <p className="mt-8 text-center text-sm font-semibold text-slate-900/80">
                     Already have an account? <Link to="/login" className="text-brand font-extrabold hover:text-brand-light transition-colors">Log in</Link>
                 </p>
             </div>

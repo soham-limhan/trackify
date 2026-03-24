@@ -31,9 +31,9 @@ function ForgotPassword() {
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4">
-      <div className="max-w-md w-full bg-white/10 backdrop-blur-md rounded-2xl p-8 border border-white/20 shadow-xl">
+      <div className="max-w-md w-full bg-slate-50 backdrop-blur-md rounded-2xl p-8 border border-slate-200 shadow-xl">
         <div className="text-center mb-8">
-          <h2 className="text-3xl font-bold text-white mb-2">Forgot Password</h2>
+          <h2 className="text-3xl font-bold text-slate-900 mb-2">Forgot Password</h2>
           <p className="text-blue-100">Enter your email to receive a password reset link.</p>
         </div>
 
@@ -60,7 +60,7 @@ function ForgotPassword() {
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-4 py-3 bg-black/20 border border-white/10 rounded-xl text-white placeholder-blue-200/50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+              className="w-full px-4 py-3 bg-white border border-slate-200 border border-slate-200 rounded-xl text-slate-900 placeholder-blue-200/50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
               placeholder="you@example.com"
             />
           </div>
@@ -76,7 +76,7 @@ function ForgotPassword() {
 
         <p className="mt-8 text-center text-sm text-blue-200">
           Remember your password?{' '}
-          <Link to="/login" className="text-white hover:text-blue-100 font-medium hover:underline transition-all">
+          <Link to="/login" className="text-slate-900 hover:text-blue-100 font-medium hover:underline transition-all">
             Log in
           </Link>
         </p>
