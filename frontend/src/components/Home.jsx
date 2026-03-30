@@ -26,22 +26,25 @@ export default function Home() {
                 initial="hidden"
                 animate="visible"
                 variants={containerVariants}
-                className="z-10 w-full max-w-2xl p-10 md:p-14 rounded-3xl transform hover:scale-[1.01] transition-transform duration-700 shadow-2xl flex flex-col items-center text-center glass border border-white/5"
+                className="z-10 w-full max-w-2xl p-10 md:p-14 rounded-3xl transform hover:scale-[1.01] transition-transform duration-700 shadow-2xl flex flex-col items-center text-center glass-panel relative overflow-hidden"
             >
+                {/* Glow Effects */}
+                <div className="absolute top-0 right-0 -mr-20 -mt-20 w-64 h-64 rounded-full bg-indigo-500/20 blur-3xl pointer-events-none"></div>
+                <div className="absolute bottom-0 left-0 -ml-20 -mb-20 w-64 h-64 rounded-full bg-emerald-500/20 blur-3xl pointer-events-none"></div>
 
                 {/* Logo Design */}
-                <motion.div variants={itemVariants} className="mb-8 relative group">
-                    <div className="absolute -inset-2 bg-indigo-500/20 rounded-full blur-xl opacity-0 group-hover:opacity-100 transition duration-700"></div>
-                    <div className="relative w-20 h-20 bg-white/5 backdrop-blur-md rounded-2xl border border-white/10 shadow-2xl flex items-center justify-center group-hover:-translate-y-1 transition-all duration-500">
+                <motion.div variants={itemVariants} className="mb-8 relative group z-10">
+                    <div className="absolute -inset-2 bg-indigo-500/50 rounded-full blur-xl opacity-0 group-hover:opacity-100 transition duration-700"></div>
+                    <div className="relative w-20 h-20 bg-white/60 dark:bg-dark-card/60 backdrop-blur-md rounded-2xl border border-slate-300 dark:border-white/10 shadow-xl flex items-center justify-center group-hover:-translate-y-1 transition-all duration-500">
                         <span className="text-4xl font-black bg-clip-text text-transparent bg-gradient-to-br from-indigo-400 to-emerald-400 tracking-tighter">Tr</span>
                     </div>
                 </motion.div>
 
                 {/* Typography */}
-                <motion.h1 variants={itemVariants} className="text-4xl md:text-6xl font-bold text-white mb-5 tracking-tight text-transparent bg-clip-text bg-gradient-to-b from-white to-white/70">
+                <motion.h1 variants={itemVariants} className="text-4xl md:text-6xl font-bold mb-5 tracking-tight text-transparent bg-clip-text bg-gradient-to-b from-slate-900 dark:from-white to-slate-600 dark:to-slate-400 z-10">
                     Trackify
                 </motion.h1>
-                <motion.p variants={itemVariants} className="text-base md:text-lg text-slate-300 font-medium mb-10 max-w-md mx-auto leading-relaxed">
+                <motion.p variants={itemVariants} className="text-base md:text-lg text-slate-600 dark:text-slate-400 font-medium mb-10 max-w-md mx-auto leading-relaxed z-10">
                     The most elegant way to manage your expenses and track your financial growth with profound clarity.
                 </motion.p>
 
@@ -51,16 +54,15 @@ export default function Home() {
                     onClick={() => navigate('/login')}
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
-                    className="group relative px-8 py-4 w-full sm:w-auto overflow-hidden rounded-xl bg-white/5 shadow-lg shadow-black/20 hover:shadow-indigo-500/10 transition-colors duration-500 border border-white/10 hover:border-indigo-500/30"
+                    className="group relative px-8 py-4 w-full sm:w-auto overflow-hidden rounded-xl bg-indigo-600 shadow-lg shadow-indigo-500/25 transition-all duration-500 border border-indigo-500 z-10 button-glow"
                 >
-                    <div className="absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-indigo-500 to-transparent transform scale-x-0 group-hover:scale-x-100 transition-transform duration-700"></div>
-                    <span className="relative z-10 font-semibold text-sm tracking-wide text-white flex items-center justify-center gap-3">
+                    <span className="relative z-10 font-bold text-sm tracking-wide text-slate-900 dark:text-white flex items-center justify-center gap-3">
                         Continue to Login
-                        <svg className="w-4 h-4 transform group-hover:translate-x-1 transition-transform text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg className="w-4 h-4 transform group-hover:translate-x-1 transition-transform text-slate-900 dark:text-white/80" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path>
                         </svg>
                     </span>
-                    <span className="absolute inset-0 bg-indigo-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></span>
+                    <span className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></span>
                 </motion.button>
             </motion.div>
 
