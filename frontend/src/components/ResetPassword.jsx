@@ -6,7 +6,7 @@ import { API_BASE_URL } from '../config';
 function ResetPassword() {
   const [searchParams] = useSearchParams();
   const token = searchParams.get('token');
-  
+
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [message, setMessage] = useState('');
@@ -31,9 +31,9 @@ function ResetPassword() {
     setLoading(true);
 
     try {
-      const response = await axios.post(`${API_BASE_URL}/api/auth/reset-password`, { 
-        token, 
-        new_password: newPassword 
+      const response = await axios.post(`${API_BASE_URL}/api/auth/reset-password`, {
+        token,
+        new_password: newPassword
       });
       setMessage(response.data.message);
       setNewPassword('');
@@ -52,9 +52,9 @@ function ResetPassword() {
   if (!token) {
     return (
       <div className="min-h-screen flex items-center justify-center p-4">
-        <div className="max-w-md w-full glass-panel rounded-2xl p-8 border border-slate-300 dark:border-white/10 shadow-xl text-center">
+        <div className="max-w-md w-full glass-panel rounded-2xl p-8 shadow-xl text-center">
           <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-4">Invalid Link</h2>
-          <p className="text-slate-600 dark:text-slate-400 mb-6">The password reset link is invalid or missing the token.</p>
+          <p className="text-slate-600 dark:text-slate-300 mb-6">The password reset link is invalid or missing the token.</p>
           <Link to="/forgot-password" className="inline-block bg-indigo-600 text-white px-6 py-2 rounded-xl font-bold hover:bg-indigo-500 transition-all">
             Request new link
           </Link>
@@ -65,21 +65,21 @@ function ResetPassword() {
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4">
-      <div className="max-w-md w-full glass-panel rounded-2xl p-8 border border-slate-300 dark:border-white/10 shadow-xl">
+      <div className="max-w-md w-full glass-panel rounded-2xl p-8 shadow-xl">
         <div className="text-center mb-8">
           <h2 className="text-3xl font-bold text-slate-900 dark:text-white mb-2">Reset Password</h2>
-          <p className="text-slate-600 dark:text-slate-400">Enter your new password below.</p>
+          <p className="text-slate-600 dark:text-slate-300">Enter your new password below.</p>
         </div>
 
         {error && (
-          <div className="bg-red-100 dark:bg-red-900/30 border border-red-500/40 text-red-700 dark:text-red-200 p-3 rounded-lg mb-6 text-sm">
+          <div className="bg-red-100 dark:bg-red-900/30 border border-red-400 dark:border-red-500/40 text-red-700 dark:text-red-200 p-3 rounded-lg mb-6 text-sm">
             {error}
           </div>
         )}
 
         {message ? (
           <div className="text-center">
-            <div className="bg-emerald-100 dark:bg-emerald-900/30 border border-emerald-500/40 text-emerald-700 dark:text-emerald-200 p-3 rounded-lg mb-6 text-sm">
+            <div className="bg-emerald-100 dark:bg-emerald-900/30 border border-emerald-400 dark:border-emerald-500/40 text-emerald-700 dark:text-emerald-200 p-3 rounded-lg mb-6 text-sm">
               {message}
             </div>
             <Link to="/login" className="inline-block w-full bg-indigo-600 text-white py-3 rounded-xl font-bold hover:bg-indigo-500 transition-all">
@@ -98,7 +98,7 @@ function ResetPassword() {
                 required
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
-                className="w-full px-4 py-3 bg-white dark:bg-dark-bg/50 border border-slate-300 dark:border-white/10 rounded-xl text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                className="w-full px-4 py-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
                 placeholder="••••••••"
                 minLength={6}
               />
@@ -114,7 +114,7 @@ function ResetPassword() {
                 required
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
-                className="w-full px-4 py-3 bg-white dark:bg-dark-bg/50 border border-slate-300 dark:border-white/10 rounded-xl text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                className="w-full px-4 py-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
                 placeholder="••••••••"
                 minLength={6}
               />

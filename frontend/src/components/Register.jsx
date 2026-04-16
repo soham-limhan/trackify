@@ -55,11 +55,11 @@ export default function Register() {
                         </div>
                     </div>
                     <h2 className="text-4xl font-extrabold text-slate-900 dark:text-white mb-2 tracking-tight">Create Account</h2>
-                    <p className="text-slate-600 dark:text-slate-400 font-medium">Join Trackify to manage your expenses.</p>
+                    <p className="text-slate-600 dark:text-slate-300 font-medium">Join Trackify to manage your expenses.</p>
                 </div>
 
                 {error && (
-                    <div className="mb-6 p-4 bg-red-900/30 border-l-4 border-red-500 text-red-200 rounded-lg text-sm font-medium animate-pulse">
+                    <div className="mb-6 p-4 bg-red-100 dark:bg-red-900/30 border-l-4 border-red-500 text-red-700 dark:text-red-200 rounded-lg text-sm font-medium">
                         {error}
                     </div>
                 )}
@@ -71,7 +71,7 @@ export default function Register() {
                             type="text"
                             required
                             placeholder="John Doe"
-                            className="w-full px-5 py-3 rounded-xl border border-slate-300 dark:border-white/10 focus:ring-4 focus:ring-brand/20 focus:border-brand outline-none transition-all bg-slate-50/50 dark:bg-dark-bg/50 shadow-sm text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 group-hover:bg-slate-50/80 dark:group-hover:bg-dark-bg/80"
+                            className="w-full px-5 py-3 rounded-xl border focus:ring-4 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all shadow-sm"
                             value={name}
                             onChange={(e) => setName(e.target.value)}
                         />
@@ -82,7 +82,7 @@ export default function Register() {
                             type="email"
                             required
                             placeholder="you@example.com"
-                            className="w-full px-5 py-3 rounded-xl border border-slate-300 dark:border-white/10 focus:ring-4 focus:ring-brand/20 focus:border-brand outline-none transition-all bg-slate-50/50 dark:bg-dark-bg/50 shadow-sm text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 group-hover:bg-slate-50/80 dark:group-hover:bg-dark-bg/80"
+                            className="w-full px-5 py-3 rounded-xl border focus:ring-4 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all shadow-sm"
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
                         />
@@ -93,7 +93,7 @@ export default function Register() {
                             type="password"
                             required
                             placeholder="••••••••"
-                            className="w-full px-5 py-3 rounded-xl border border-slate-300 dark:border-white/10 focus:ring-4 focus:ring-brand/20 focus:border-brand outline-none transition-all bg-slate-50/50 dark:bg-dark-bg/50 shadow-sm text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 group-hover:bg-slate-50/80 dark:group-hover:bg-dark-bg/80"
+                            className="w-full px-5 py-3 rounded-xl border focus:ring-4 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all shadow-sm"
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
                         />
@@ -101,7 +101,7 @@ export default function Register() {
                     <button
                         type="submit"
                         disabled={loading}
-                        className="w-full mt-2 py-3.5 px-4 bg-indigo-600 hover:bg-indigo-500 overflow-hidden relative text-white rounded-xl font-bold shadow-[0_8px_30px_rgb(99,102,241,0.3)] transform transition-all duration-300 hover:-translate-y-1 active:scale-95 group disabled:opacity-70 disabled:hover:translate-y-0 button-glow"
+                        className="w-full mt-2 py-3.5 px-4 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-bold shadow-[0_8px_30px_rgb(99,102,241,0.3)] transform transition-all duration-300 hover:-translate-y-1 active:scale-95 disabled:opacity-70 disabled:hover:translate-y-0 button-glow"
                     >
                         {loading ? 'Creating...' : 'Sign Up'}
                     </button>
@@ -109,7 +109,7 @@ export default function Register() {
 
                 <div className="mt-8 flex items-center justify-between">
                     <span className="border-b border-slate-300 dark:border-white/10 w-1/5 lg:w-1/4"></span>
-                    <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Or continue with</span>
+                    <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Or continue with</span>
                     <span className="border-b border-slate-300 dark:border-white/10 w-1/5 lg:w-1/4"></span>
                 </div>
 
@@ -126,7 +126,8 @@ export default function Register() {
                 </div>
 
                 <p className="mt-8 text-center text-sm text-slate-600 dark:text-slate-400">
-                    Already have an account? <Link to="/login" className="text-indigo-400 font-bold hover:text-indigo-300 transition-colors">Log in</Link>
+                    Already have an account?{' '}
+                    <Link to="/login" className="text-indigo-500 dark:text-indigo-400 font-bold hover:text-indigo-400 dark:hover:text-indigo-300 transition-colors">Log in</Link>
                 </p>
             </div>
         </div>

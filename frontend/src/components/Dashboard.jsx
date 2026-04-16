@@ -348,7 +348,7 @@ export default function Dashboard() {
                             <button
                                 key={tab.id}
                                 onClick={() => setActiveTab(tab.id)}
-                                className={`flex items-center gap-3 px-4 py-2 text-xs font-black uppercase tracking-widest rounded-xl transition-all ${activeTab === tab.id ? 'bg-indigo-600 text-white shadow-lg' : 'text-slate-500 hover:text-indigo-600'}`}
+                                className={`flex items-center gap-3 px-4 py-2 text-xs font-black uppercase tracking-widest rounded-xl transition-all ${activeTab === tab.id ? 'bg-indigo-600 text-white shadow-lg' : 'text-slate-600 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400'}`}
                             >
                                 {tab.icon} {tab.label}
                             </button>
@@ -365,7 +365,7 @@ export default function Dashboard() {
 
             <motion.main initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }} ref={dashboardRef} className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
                 {/* HERO SUMMARY */}
-                <div className="relative overflow-hidden rounded-[3rem] bg-slate-900 px-12 py-16 mb-12 shadow-2xl border border-white/5">
+                <div className="relative overflow-hidden rounded-[3rem] dark-card px-12 py-16 mb-12 shadow-2xl">
                     <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-indigo-600/10 rounded-full blur-[120px] -mr-64 -mt-64 animate-pulse"></div>
                     <div className="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-end gap-10">
                         <div>
@@ -466,13 +466,13 @@ export default function Dashboard() {
                                         <h3 className="text-xl font-black text-slate-900 dark:text-white mb-8">Log Entry</h3>
                                         <form onSubmit={handleTransactionSubmit} className="space-y-6">
                                             <div className="flex p-1 bg-slate-100 dark:bg-slate-950 rounded-2xl">
-                                                <button type="button" onClick={() => setType('income')} className={`flex-1 py-3 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all ${type === 'income' ? 'bg-indigo-600 text-white shadow-lg' : 'text-slate-500'}`}>Income</button>
-                                                <button type="button" onClick={() => setType('expense')} className={`flex-1 py-3 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all ${type === 'expense' ? 'bg-indigo-600 text-white shadow-lg' : 'text-slate-500'}`}>Expense</button>
+                                                <button type="button" onClick={() => setType('income')} className={`flex-1 py-3 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all ${type === 'income' ? 'bg-indigo-600 text-white shadow-lg' : 'text-slate-600 dark:text-slate-400'}`}>Income</button>
+                                                <button type="button" onClick={() => setType('expense')} className={`flex-1 py-3 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all ${type === 'expense' ? 'bg-indigo-600 text-white shadow-lg' : 'text-slate-600 dark:text-slate-400'}`}>Expense</button>
                                             </div>
                                             <div className="space-y-4">
-                                                <input type="number" required placeholder="Amount (₹)" value={amount} onChange={e => setAmount(e.target.value)} className="w-full px-6 py-4 rounded-2xl bg-white dark:bg-slate-950 border border-slate-200 dark:border-white/5 font-bold outline-none ring-2 ring-transparent focus:ring-indigo-600/20" />
-                                                <input type="text" required placeholder="Category" value={category} onChange={e => setCategory(e.target.value)} className="w-full px-6 py-4 rounded-2xl bg-white dark:bg-slate-950 border border-slate-200 dark:border-white/5 font-bold outline-none ring-2 ring-transparent focus:ring-indigo-600/20" />
-                                                <input type="text" placeholder="Narrative" value={description} onChange={e => setDescription(e.target.value)} className="w-full px-6 py-4 rounded-2xl bg-white dark:bg-slate-950 border border-slate-200 dark:border-white/5 font-bold outline-none ring-2 ring-transparent focus:ring-indigo-600/20" />
+                                                <input type="number" required placeholder="Amount (₹)" value={amount} onChange={e => setAmount(e.target.value)} className="w-full px-6 py-4 rounded-2xl border border-slate-200 dark:border-white/5 font-bold outline-none ring-2 ring-transparent focus:ring-indigo-600/20 text-slate-900 dark:text-white" />
+                                                <input type="text" required placeholder="Category" value={category} onChange={e => setCategory(e.target.value)} className="w-full px-6 py-4 rounded-2xl border border-slate-200 dark:border-white/5 font-bold outline-none ring-2 ring-transparent focus:ring-indigo-600/20 text-slate-900 dark:text-white" />
+                                                <input type="text" placeholder="Narrative" value={description} onChange={e => setDescription(e.target.value)} className="w-full px-6 py-4 rounded-2xl border border-slate-200 dark:border-white/5 font-bold outline-none ring-2 ring-transparent focus:ring-indigo-600/20 text-slate-900 dark:text-white" />
                                             </div>
                                             <button type="submit" className={`w-full py-4 rounded-2xl font-black text-white hover:scale-[1.02] transform transition-all active:scale-95 ${type === 'income' ? 'bg-emerald-500 shadow-emerald-500/20' : 'bg-red-500 shadow-red-500/20'} shadow-2xl`}>Commit Record</button>
                                         </form>
@@ -506,7 +506,7 @@ export default function Dashboard() {
                                                             <p className="text-sm font-black text-slate-900 dark:text-white mt-0.5">{t.description || 'System Entry'}</p>
                                                         </td>
                                                         <td className="px-10 py-8">
-                                                            <span className="px-3 py-1 bg-slate-100 dark:bg-white/5 text-[9px] font-black uppercase tracking-tighter rounded-full border border-slate-200 dark:border-white/10">{t.category}</span>
+                                                            <span className="px-3 py-1 bg-slate-100 dark:bg-white/5 text-[9px] font-black uppercase tracking-tighter rounded-full border border-slate-200 dark:border-white/10 text-slate-700 dark:text-slate-300">{t.category}</span>
                                                         </td>
                                                         <td className={`px-10 py-8 text-sm font-black text-right tabular-nums ${t.type === 'income' ? 'text-emerald-500' : 'text-slate-900 dark:text-white'}`}>
                                                             {t.type === 'income' ? '+' : '-'}{formatCurrency(t.amount)}
@@ -523,7 +523,7 @@ export default function Dashboard() {
                         {activeTab === 'ai' && (
                             <div className="max-w-5xl mx-auto space-y-10">
                                 {loadingAI ? (
-                                    <div className="glass-panel rounded-[4rem] p-32 text-center bg-slate-950 border border-white/5 overflow-hidden relative">
+                                    <div className="dark-card rounded-[4rem] p-32 text-center overflow-hidden relative">
                                         <div className="absolute inset-0 bg-gradient-to-r from-indigo-500/10 to-purple-500/10 animate-pulse"></div>
                                         <div className="relative z-10 space-y-8">
                                             <Sparkles className="text-indigo-400 animate-spin-slow mx-auto" size={64} />
@@ -536,7 +536,7 @@ export default function Dashboard() {
                                     </div>
                                 ) : aiAdvice ? (
                                     <div className="space-y-10">
-                                        <div className="glass-panel rounded-[4rem] p-16 bg-gradient-to-br from-indigo-900/50 via-slate-900 to-emerald-900/50 border border-white/10 shadow-2xl relative overflow-hidden">
+                                        <div className="dark-card rounded-[4rem] p-16 shadow-2xl relative overflow-hidden" style={{background: 'linear-gradient(135deg, #0d0f2b 0%, #050914 50%, #061a12 100%)'}}>
                                             <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-indigo-600/10 rounded-full blur-[150px] -mr-80 -mt-80"></div>
                                             
                                             <div className="relative z-10 flex justify-between items-center mb-16">
@@ -619,7 +619,7 @@ export default function Dashboard() {
                                         </div>
                                     </div>
                                 ) : (
-                                    <div className="glass-panel rounded-[4rem] p-32 text-center space-y-12 bg-slate-900/50 border border-indigo-500/20 shadow-4xl">
+                                    <div className="dark-card rounded-[4rem] p-32 text-center space-y-12" style={{border: '1px solid rgba(99,102,241,0.15)'}}>
                                         <div className="w-24 h-24 bg-indigo-600/10 rounded-[2.5rem] flex items-center justify-center mx-auto border border-indigo-500/20">
                                             <Sparkles className="text-indigo-400" size={48} />
                                         </div>
@@ -633,7 +633,7 @@ export default function Dashboard() {
                                                 placeholder="Enter a specific goal (e.g. Save for iPhone)" 
                                                 value={aiPrompt}
                                                 onChange={(e) => setAiPrompt(e.target.value)}
-                                                className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-white/5 rounded-3xl px-8 py-5 text-sm font-bold text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-indigo-600/20"
+                                                className="w-full rounded-3xl px-8 py-5 text-sm font-bold text-slate-900 dark:text-white outline-none border border-slate-200 dark:border-white/5 focus:ring-2 focus:ring-indigo-600/20"
                                             />
                                             <button onClick={() => fetchAiAdvice()} className="w-full px-16 py-6 bg-indigo-600 hover:bg-indigo-700 text-white rounded-[2.5rem] font-black uppercase tracking-[0.2em] text-xs shadow-3xl active:scale-95 transition-all">Activate Local AI Advisor</button>
                                         </div>
@@ -650,21 +650,21 @@ export default function Dashboard() {
                                             <Target className="text-indigo-600" /> Fiscal Ceiling
                                         </h3>
                                         <form onSubmit={handleBudgetSubmit} className="space-y-6">
-                                            <input type="number" required placeholder="Ceiling (₹)" value={budgetLimit} onChange={e => setBudgetLimit(e.target.value)} className="w-full px-8 py-5 rounded-3xl bg-white dark:bg-slate-950 border border-slate-200 dark:border-white/5 font-bold outline-none ring-2 ring-transparent focus:ring-indigo-600/20" />
+                                            <input type="number" required placeholder="Ceiling (₹)" value={budgetLimit} onChange={e => setBudgetLimit(e.target.value)} className="w-full px-8 py-5 rounded-3xl border border-slate-200 dark:border-white/5 font-bold text-slate-900 dark:text-white outline-none ring-2 ring-transparent focus:ring-indigo-600/20" />
                                             <button type="submit" className="w-full py-5 bg-indigo-600 text-white rounded-[2rem] font-black uppercase tracking-widest text-xs">{budget ? 'Update Cap' : 'Establish Cap'}</button>
                                         </form>
                                     </div>
-                                    <div className="glass-panel rounded-[3rem] p-12 border border-slate-200 dark:border-white/5 bg-slate-950 shadow-xl">
+                                    <div className="dark-card rounded-[3rem] p-12 shadow-xl">
                                         <h3 className="text-xl font-black text-white mb-10 flex items-center gap-4">
                                             <Clock className="text-indigo-500" /> EMI Pipeline
                                         </h3>
                                         <form onSubmit={handleRecurringSubmit} className="space-y-6">
-                                            <input type="number" required placeholder="Quantum (₹)" value={reAmount} onChange={e => setReAmount(e.target.value)} className="w-full px-8 py-5 rounded-3xl bg-white/5 border border-white/5 font-bold text-white outline-none" />
+                                            <input type="number" required placeholder="Quantum (₹)" value={reAmount} onChange={e => setReAmount(e.target.value)} className="w-full px-8 py-5 rounded-3xl font-bold outline-none" />
                                             <div className="grid grid-cols-2 gap-6">
-                                                <input type="number" min="1" max="31" placeholder="DOM" value={reDay} onChange={e => setReDay(e.target.value)} className="px-8 py-5 rounded-3xl bg-white/5 border border-white/5 font-bold text-white outline-none" />
-                                                <input type="number" min="1" placeholder="Cycles" value={reMonths} onChange={e => setReMonths(e.target.value)} className="px-8 py-5 rounded-3xl bg-white/5 border border-white/5 font-bold text-white outline-none" />
+                                                <input type="number" min="1" max="31" placeholder="DOM" value={reDay} onChange={e => setReDay(e.target.value)} className="px-8 py-5 rounded-3xl font-bold outline-none" />
+                                                <input type="number" min="1" placeholder="Cycles" value={reMonths} onChange={e => setReMonths(e.target.value)} className="px-8 py-5 rounded-3xl font-bold outline-none" />
                                             </div>
-                                            <input type="text" required placeholder="Class" value={reCategory} onChange={e => setReCategory(e.target.value)} className="w-full px-8 py-5 rounded-3xl bg-white/5 border border-white/5 font-bold text-white outline-none" />
+                                            <input type="text" required placeholder="Class" value={reCategory} onChange={e => setReCategory(e.target.value)} className="w-full px-8 py-5 rounded-3xl font-bold outline-none" />
                                             <button type="submit" className="w-full py-5 bg-white text-slate-950 rounded-[2rem] font-black uppercase tracking-widest text-xs">Seal Pipeline</button>
                                         </form>
                                     </div>
@@ -680,7 +680,7 @@ export default function Dashboard() {
                                                     <div className="flex justify-between items-start mb-10">
                                                         <div>
                                                             <h4 className="text-2xl font-black text-slate-900 dark:text-white tracking-tighter">{re.category}</h4>
-                                                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{re.description || 'Commitment'}</p>
+                                                            <p className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">{re.description || 'Commitment'}</p>
                                                         </div>
                                                         <p className="text-2xl font-black text-indigo-600">{formatCurrency(re.amount)}</p>
                                                     </div>
@@ -699,9 +699,9 @@ export default function Dashboard() {
                                             </div>
                                         ))}
                                         {recurringExpenses.length === 0 && (
-                                            <div className="col-span-full py-40 text-center space-y-6 opacity-30">
-                                                <Clock size={64} className="mx-auto" />
-                                                <p className="text-lg font-black italic uppercase tracking-widest">No Obligations Found</p>
+                                            <div className="col-span-full py-40 text-center space-y-6">
+                                                <Clock size={64} className="mx-auto text-slate-300 dark:text-slate-700" />
+                                                <p className="text-lg font-black italic uppercase tracking-widest text-slate-400 dark:text-slate-600">No Obligations Found</p>
                                             </div>
                                         )}
                                     </div>

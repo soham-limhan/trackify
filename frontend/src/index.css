@@ -6,44 +6,92 @@
   :root {
     --bg-color: #f8fafc;
     --text-main: #0f172a;
+    --text-muted: #64748b;
     --glass-bg: rgba(255, 255, 255, 0.6);
     --glass-border: rgba(0, 0, 0, 0.05);
     --glass-shadow: rgba(0, 0, 0, 0.1);
     --glass-inset: rgba(255, 255, 255, 0.5);
-    
+
     --glass-header-bg: rgba(255, 255, 255, 0.8);
     --glass-header-shadow: rgba(0, 0, 0, 0.05);
-    
+
     --glass-panel-bg1: rgba(255, 255, 255, 0.9);
     --glass-panel-bg2: rgba(248, 250, 252, 0.8);
     --glass-panel-shadow: rgba(0, 0, 0, 0.08);
+
+    --input-bg: #ffffff;
+    --input-text: #0f172a;
+    --input-placeholder: #94a3b8;
+    --input-border: #e2e8f0;
   }
 
   .dark {
     --bg-color: #050505;
     --text-main: #f8fafc;
+    --text-muted: #94a3b8;
     --glass-bg: rgba(17, 24, 39, 0.4);
     --glass-border: rgba(255, 255, 255, 0.08);
     --glass-shadow: rgba(0, 0, 0, 0.4);
     --glass-inset: rgba(255, 255, 255, 0.1);
-    
+
     --glass-header-bg: rgba(5, 5, 5, 0.7);
     --glass-header-shadow: rgba(0, 0, 0, 0.5);
-    
+
     --glass-panel-bg1: rgba(30, 41, 59, 0.4);
     --glass-panel-bg2: rgba(15, 23, 42, 0.4);
     --glass-panel-shadow: rgba(0, 0, 0, 0.5);
+
+    --input-bg: #0d1117;
+    --input-text: #f8fafc;
+    --input-placeholder: #64748b;
+    --input-border: rgba(255, 255, 255, 0.08);
+  }
+
+  /* html & body both switch colors on theme change */
+  html {
+    color: var(--text-main);
+    background-color: var(--bg-color);
+    transition: background-color 0.5s ease, color 0.5s ease;
   }
 
   body {
-    @apply antialiased font-sans overflow-x-hidden transition-colors duration-500;
+    @apply antialiased font-sans overflow-x-hidden;
     color: var(--text-main);
     background-color: var(--bg-color);
-    background-image: 
-      radial-gradient(circle at 0% 0%, rgba(99, 102, 241, 0.15) 0%, transparent 50%),
-      radial-gradient(circle at 100% 100%, rgba(168, 85, 247, 0.15) 0%, transparent 50%),
-      radial-gradient(circle at 50% 50%, rgba(16, 185, 129, 0.05) 0%, transparent 50%);
     background-attachment: fixed;
+    transition: background-color 0.5s ease, color 0.5s ease;
+  }
+
+  /* ── Universal form control readability ──
+     Any input/textarea/select always gets readable fg/bg
+     regardless of which Tailwind bg-* utility is on it.  */
+  input,
+  textarea,
+  select {
+    color: var(--input-text) !important;
+    background-color: var(--input-bg);
+    border-color: var(--input-border);
+    transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+  }
+
+  input::placeholder,
+  textarea::placeholder {
+    color: var(--input-placeholder) !important;
+    opacity: 1;
+  }
+
+  /* ── Inputs inside always-dark surfaces stay dark always ── */
+  .dark-card input,
+  .dark-card textarea,
+  .dark-card select {
+    background-color: rgba(255, 255, 255, 0.05) !important;
+    color: #f1f5f9 !important;
+    border-color: rgba(255, 255, 255, 0.08) !important;
+  }
+
+  .dark-card input::placeholder,
+  .dark-card textarea::placeholder {
+    color: rgba(148, 163, 184, 0.6) !important;
   }
 
   ::selection {
@@ -53,6 +101,25 @@
 }
 
 @layer utilities {
+  /* ── Animated gradient page background (light mode) ── */
+  .animated-gradient-bg {
+    background:
+      radial-gradient(ellipse at 0% 0%, rgba(99, 102, 241, 0.18) 0%, transparent 55%),
+      radial-gradient(ellipse at 100% 100%, rgba(168, 85, 247, 0.15) 0%, transparent 55%),
+      radial-gradient(ellipse at 50% 50%, rgba(16, 185, 129, 0.07) 0%, transparent 55%),
+      #f8fafc;
+    transition: background 0.5s ease;
+  }
+
+  /* ── Animated gradient page background (dark mode) ── */
+  .dark .animated-gradient-bg {
+    background:
+      radial-gradient(ellipse at 0% 0%, rgba(99, 102, 241, 0.10) 0%, transparent 55%),
+      radial-gradient(ellipse at 100% 100%, rgba(168, 85, 247, 0.08) 0%, transparent 55%),
+      radial-gradient(ellipse at 50% 50%, rgba(16, 185, 129, 0.04) 0%, transparent 55%),
+      #050505;
+  }
+
   .glass {
     background: var(--glass-bg);
     backdrop-filter: blur(16px) saturate(180%);
@@ -66,7 +133,7 @@
     background: var(--glass-header-bg);
     backdrop-filter: blur(24px) saturate(200%);
     -webkit-backdrop-filter: blur(24px) saturate(200%);
-    border-bottom: 1px solid var(--glass-border); 
+    border-bottom: 1px solid var(--glass-border);
     box-shadow: 0 4px 30px var(--glass-header-shadow);
     transition: background-color 0.5s ease, border-color 0.5s ease, box-shadow 0.5s ease;
   }
@@ -82,6 +149,15 @@
 
   .text-gradient {
     @apply bg-clip-text text-transparent bg-gradient-to-r from-brand-light via-fuchsia-400 to-emerald-400;
+  }
+
+  /* ── Always-dark surface (for AI panels, dark hero cards) ──
+     Does NOT respond to theme changes — always renders dark.   */
+  .dark-card {
+    background: #050914;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 1.5rem;
+    box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.7);
   }
 
   .button-glow {
@@ -106,7 +182,7 @@
 }
 
 @keyframes glow-anim {
-  0% { background-position: 0 0; }
-  50% { background-position: 400% 0; }
+  0%   { background-position: 0 0; }
+  50%  { background-position: 400% 0; }
   100% { background-position: 0 0; }
-}
+}

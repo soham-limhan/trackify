@@ -31,20 +31,20 @@ function ForgotPassword() {
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4">
-      <div className="max-w-md w-full glass-panel rounded-2xl p-8 border border-slate-300 dark:border-white/10 shadow-xl">
+      <div className="max-w-md w-full glass-panel rounded-2xl p-8 shadow-xl">
         <div className="text-center mb-8">
           <h2 className="text-3xl font-bold text-slate-900 dark:text-white mb-2">Forgot Password</h2>
-          <p className="text-slate-600 dark:text-slate-400">Enter your email to receive a password reset link.</p>
+          <p className="text-slate-600 dark:text-slate-300">Enter your email to receive a password reset link.</p>
         </div>
 
         {error && (
-          <div className="bg-red-100 dark:bg-red-900/30 border border-red-500/40 text-red-700 dark:text-red-200 p-3 rounded-lg mb-6 text-sm">
+          <div className="bg-red-100 dark:bg-red-900/30 border border-red-400 dark:border-red-500/40 text-red-700 dark:text-red-200 p-3 rounded-lg mb-6 text-sm">
             {error}
           </div>
         )}
 
         {message && (
-          <div className="bg-emerald-100 dark:bg-emerald-900/30 border border-emerald-500/40 text-emerald-700 dark:text-emerald-200 p-3 rounded-lg mb-6 text-sm">
+          <div className="bg-emerald-100 dark:bg-emerald-900/30 border border-emerald-400 dark:border-emerald-500/40 text-emerald-700 dark:text-emerald-200 p-3 rounded-lg mb-6 text-sm">
             {message}
           </div>
         )}
@@ -60,7 +60,7 @@ function ForgotPassword() {
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-4 py-3 bg-white dark:bg-dark-bg/50 border border-slate-300 dark:border-white/10 rounded-xl text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+              className="w-full px-4 py-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
               placeholder="you@example.com"
             />
           </div>
@@ -76,7 +76,7 @@ function ForgotPassword() {
 
         <p className="mt-8 text-center text-sm text-slate-600 dark:text-slate-400">
           Remember your password?{' '}
-          <Link to="/login" className="text-indigo-600 dark:text-indigo-400 hover:text-indigo-500 dark:hover:text-indigo-300 font-medium hover:underline transition-all">
+          <Link to="/login" className="text-indigo-500 dark:text-indigo-400 hover:text-indigo-400 dark:hover:text-indigo-300 font-medium transition-all">
             Log in
           </Link>
         </p>

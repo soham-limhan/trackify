@@ -15,13 +15,11 @@ export default function Login() {
         setError('');
         try {
             const formData = new FormData();
-            formData.append('username', email); // OAuth2 expects 'username'
+            formData.append('username', email);
             formData.append('password', password);
 
             const res = await axios.post(`${API_BASE_URL}/api/auth/token`, formData, {
-                headers: {
-                    'Content-Type': 'multipart/form-data'
-                }
+                headers: { 'Content-Type': 'multipart/form-data' }
             });
             localStorage.setItem('token', res.data.access_token);
             navigate('/dashboard');
@@ -54,11 +52,11 @@ export default function Login() {
                         </div>
                     </div>
                     <h2 className="text-4xl font-extrabold text-slate-900 dark:text-white mb-2 tracking-tight">Trackify</h2>
-                    <p className="text-slate-600 dark:text-slate-400 font-medium">Welcome back! Log in to continue.</p>
+                    <p className="text-slate-600 dark:text-slate-300 font-medium">Welcome back! Log in to continue.</p>
                 </div>
 
                 {error && (
-                    <div className="mb-6 p-4 bg-red-900/30 border-l-4 border-red-500 text-red-200 rounded-lg text-sm font-medium animate-pulse">
+                    <div className="mb-6 p-4 bg-red-100 dark:bg-red-900/30 border-l-4 border-red-500 text-red-700 dark:text-red-200 rounded-lg text-sm font-medium">
                         {error}
                     </div>
                 )}
@@ -70,7 +68,7 @@ export default function Login() {
                             type="email"
                             required
                             placeholder="you@example.com"
-                            className="w-full px-5 py-3.5 rounded-xl border border-slate-300 dark:border-white/10 focus:ring-4 focus:ring-brand/20 focus:border-brand outline-none transition-all bg-slate-50/50 dark:bg-dark-bg/50 shadow-sm text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 group-hover:bg-slate-50/80 dark:group-hover:bg-dark-bg/80"
+                            className="w-full px-5 py-3.5 rounded-xl border focus:ring-4 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all shadow-sm"
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
                         />
@@ -78,20 +76,20 @@ export default function Login() {
                     <div className="group">
                         <div className="flex justify-between items-center mb-2">
                             <label className="block text-sm font-bold text-slate-700 dark:text-slate-300">Password</label>
-                            <Link to="/forgot-password" className="text-xs font-bold text-indigo-400 hover:text-indigo-300 transition-colors">Forgot Password?</Link>
+                            <Link to="/forgot-password" className="text-xs font-bold text-indigo-500 dark:text-indigo-400 hover:text-indigo-400 dark:hover:text-indigo-300 transition-colors">Forgot Password?</Link>
                         </div>
                         <input
                             type="password"
                             required
                             placeholder="••••••••"
-                            className="w-full px-5 py-3.5 rounded-xl border border-slate-300 dark:border-white/10 focus:ring-4 focus:ring-brand/20 focus:border-brand outline-none transition-all bg-slate-50/50 dark:bg-dark-bg/50 shadow-sm text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 group-hover:bg-slate-50/80 dark:group-hover:bg-dark-bg/80"
+                            className="w-full px-5 py-3.5 rounded-xl border focus:ring-4 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all shadow-sm"
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
                         />
                     </div>
                     <button
                         type="submit"
-                        className="w-full py-3.5 px-4 bg-indigo-600 hover:bg-indigo-500 overflow-hidden relative text-white rounded-xl font-bold shadow-[0_8px_30px_rgb(99,102,241,0.3)] transform transition-all duration-300 hover:-translate-y-1 active:scale-95 group button-glow"
+                        className="w-full py-3.5 px-4 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-bold shadow-[0_8px_30px_rgb(99,102,241,0.3)] transform transition-all duration-300 hover:-translate-y-1 active:scale-95 button-glow"
                     >
                         Sign In
                     </button>
@@ -99,7 +97,7 @@ export default function Login() {
 
                 <div className="mt-8 flex items-center justify-between">
                     <span className="border-b border-slate-300 dark:border-white/10 w-1/5 lg:w-1/4"></span>
-                    <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Or continue with</span>
+                    <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Or continue with</span>
                     <span className="border-b border-slate-300 dark:border-white/10 w-1/5 lg:w-1/4"></span>
                 </div>
 
@@ -116,7 +114,8 @@ export default function Login() {
                 </div>
 
                 <p className="mt-8 text-center text-sm text-slate-600 dark:text-slate-400">
-                    Don't have an account? <Link to="/register" className="text-indigo-400 font-bold hover:text-indigo-300 transition-colors">Sign up</Link>
+                    Don't have an account?{' '}
+                    <Link to="/register" className="text-indigo-500 dark:text-indigo-400 font-bold hover:text-indigo-400 dark:hover:text-indigo-300 transition-colors">Sign up</Link>
                 </p>
             </div>
         </div>

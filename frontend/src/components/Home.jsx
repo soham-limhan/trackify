@@ -56,9 +56,9 @@ export default function Home() {
                     whileTap={{ scale: 0.95 }}
                     className="group relative px-8 py-4 w-full sm:w-auto overflow-hidden rounded-xl bg-indigo-600 shadow-lg shadow-indigo-500/25 transition-all duration-500 border border-indigo-500 z-10 button-glow"
                 >
-                    <span className="relative z-10 font-bold text-sm tracking-wide text-slate-900 dark:text-white flex items-center justify-center gap-3">
+                    <span className="relative z-10 font-bold text-sm tracking-wide text-white flex items-center justify-center gap-3">
                         Continue to Login
-                        <svg className="w-4 h-4 transform group-hover:translate-x-1 transition-transform text-slate-900 dark:text-white/80" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg className="w-4 h-4 transform group-hover:translate-x-1 transition-transform text-white/80" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path>
                         </svg>
                     </span>
