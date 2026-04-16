@@ -9,9 +9,15 @@ import csv
 import openpyxl
 from openpyxl.styles import Font
 import PyPDF2
+import logging
 from google.cloud import firestore
 import database
 from auth import get_current_user, User
+from ai_advisor import get_ai_financial_advice, FinancialAdviceSchema
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -48,6 +54,7 @@ class AnalyticsSummary(BaseModel):
     total_expenses: float
     expenses_by_category: Dict[str, float]
     financial_advice: List[str] = []
+    ai_advisor_output: Optional[FinancialAdviceSchema] = None
 
 class RecurringExpenseCreate(BaseModel):
     amount: float
@@ -129,7 +136,7 @@ def get_budget(db: firestore.Client = Depends(database.get_db), current_user: Us
     return None
 
 @router.get("/analytics", response_model=AnalyticsSummary)
-def get_analytics(db: firestore.Client = Depends(database.get_db), current_user: User = Depends(get_current_user)):
+async def get_analytics(db: firestore.Client = Depends(database.get_db), current_user: User = Depends(get_current_user)):
     # Trigger processing of recurring expenses
     process_recurring_expenses(db, current_user.id)
     
@@ -138,9 +145,11 @@ def get_analytics(db: firestore.Client = Depends(database.get_db), current_user:
     total_income = 0.0
     total_expenses = 0.0
     expenses_by_category = {}
+    all_transactions = []
     
     for doc in transactions_ref:
         t = doc.to_dict()
+        all_transactions.append(t)
         amount = t.get('amount', 0)
         t_type = t.get('type')
         category = t.get('category')
@@ -194,8 +203,39 @@ def get_analytics(db: firestore.Client = Depends(database.get_db), current_user:
         total_income=total_income,
         total_expenses=total_expenses,
         expenses_by_category=expenses_by_category,
-        financial_advice=advice
+        financial_advice=advice,
+        ai_advisor_output=None # Set to None as it's now fetched separately
     )
+
+class AIAdviceRequest(BaseModel):
+    user_query: Optional[str] = None
+
+@router.post("/ai-advice", response_model=FinancialAdviceSchema)
+async def get_ai_advice(
+    request: Optional[AIAdviceRequest] = None,
+    db: firestore.Client = Depends(database.get_db), 
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Independent endpoint for time-consuming AI analysis.
+    Supports optional user_query for specific goals.
+    """
+    user_query = request.user_query if request else None
+    logger.info(f"AI Advice requested by user {current_user.id}. Query: {user_query}")
+    
+    transactions_ref = db.collection('transactions').where('user_id', '==', current_user.id).stream()
+    all_transactions = [doc.to_dict() for doc in transactions_ref]
+    
+    if not all_transactions:
+        raise HTTPException(status_code=404, detail="No transactions found for analysis")
+    
+    user_query = request.user_query if request else None
+    ai_output = await get_ai_financial_advice(all_transactions, user_query=user_query)
+    
+    if not ai_output:
+        raise HTTPException(status_code=500, detail="AI Advisor failed to generate advice")
+        
+    return ai_output
 
 @router.delete("/reset")
 def reset_data(db: firestore.Client = Depends(database.get_db), current_user: User = Depends(get_current_user)):
