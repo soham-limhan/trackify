@@ -1,6 +1,6 @@
 # Trackify V2
 
-> A full-stack personal finance tracking application with AI-powered financial advisory, recurring expense automation, bank statement import, and rich data visualizations.
+> A full-stack personal finance tracking application with AI-powered financial advisory, recurring expense automation, bank statement import, rich data visualizations, and advanced risk assessment reporting.
 
 ---
 
@@ -50,7 +50,9 @@
 - Import bank statements directly from PDF files.
 - Track and automate recurring EMI / subscription expenses.
 - View rich analytics with categorized spending breakdowns.
-- Get personalized financial advice powered by a local **Ollama LLM** (AI Financial Advisor).
+- **[NEW]** Get personalized financial advice and real-time risk scores powered by a local **Ollama LLM**.
+- **[NEW]** Calculate debt payoff strategies using the built-in Debt Payoff Calculator.
+- **[NEW]** Generate high-fidelity, dashboard-style PDF reports with interactive charts and custom date ranges.
 - Export transaction history to **CSV** or **Excel**.
 - Toggle between **light and dark themes**.
 - See a live real-time clock via **WebSocket**.
@@ -69,6 +71,8 @@ All data is persisted in **Google Cloud Firestore**, ensuring scalability and re
 | 🔁 **Recurring Expenses** | Schedule EMI-style recurring deductions with automatic monthly processing |
 | 📊 **Analytics Dashboard** | Visual breakdowns of income vs. expenses by category (Recharts) |
 | 🤖 **AI Financial Advisor** | LLM-powered advice via Ollama, supporting custom natural-language queries |
+| 🛡️ **Risk & Debt Analyzer** | **[NEW]** Calculates an AI Risk Score (0-100) based on your spending habits, evaluates emergency funds, and calculates debt payoff timelines |
+| 📈 **Advanced PDF Reporting** | **[NEW]** Generate highly polished, visual-rich PDF reports via `html2canvas` and `jsPDF`. Includes Risk Score Trends, Savings vs Expense charts, and custom date range filters, accessible via a global header gateway button |
 | 📤 **Export** | Download transaction history as `.csv` or `.xlsx` |
 | 🌙 **Light / Dark Theme** | Fully supported theme toggle with CSS variables |
 | ⏰ **Live Clock** | Real-time date/time display via WebSocket |
@@ -104,12 +108,12 @@ All data is persisted in **Google Cloud Firestore**, ensuring scalability and re
 | **React Router DOM 7** | Client-side routing |
 | **Tailwind CSS 3** | Utility-first styling |
 | **Framer Motion 12** | Page transition animations |
-| **Recharts 3** | Financial data charts |
+| **Recharts 3** | Financial data charts (Line, Bar, Pie) |
 | **@react-oauth/google** | Google Sign-In integration |
 | **lucide-react** | Icon library |
 | **jwt-decode** | JWT token parsing on the client |
 | **jsPDF / jspdf-autotable** | PDF export from the frontend |
-| **html2canvas** | Screenshot-to-canvas for PDF |
+| **html2canvas** | Screenshot-to-canvas for high-fidelity PDF charting |
 | **three.js** | 3D visual effects (background) |
 
 ### Infrastructure
@@ -200,7 +204,8 @@ TrackifyV2/
 │   │   │   ├── Register.jsx       # Registration form
 │   │   │   ├── ForgotPassword.jsx # Forgot password flow
 │   │   │   ├── ResetPassword.jsx  # Reset password with token
-│   │   │   ├── Dashboard.jsx      # Main feature dashboard (tabs, charts, AI advisor)
+│   │   │   ├── Dashboard.jsx      # Main feature dashboard (tabs, charts, AI advisor, PDF Gateway)
+│   │   │   ├── RiskDebtAnalyzer.jsx # Advanced Risk Analysis & PDF Engine
 │   │   │   ├── ThemeToggle.jsx    # Light/Dark mode toggle button
 │   │   │   ├── ColorBends.jsx     # Animated gradient background (Three.js/Canvas)
 │   │   │   ├── ColorBends.css
@@ -236,7 +241,7 @@ Ensure the following are installed on your system:
 - **Docker & Docker Compose** (for containerized setup)
 - **Git**
 - A **Google Firebase** project with Firestore enabled
-- **Ollama** (optional, required for the AI Advisor feature)
+- **Ollama** (optional, required for the AI Advisor and Risk Analysis features)
 
 ---
 
@@ -300,7 +305,7 @@ The frontend will be available at `http://localhost:5173`.
 
 ### 5. AI Advisor Setup (Ollama)
 
-The AI Financial Advisor uses a local Ollama model. This is an **optional** feature — all other functionality works without it.
+The AI Financial Advisor and the Risk Score Analyzer use a local Ollama model. This is an **optional** feature — all other functionality works without it.
 
 1. **Install Ollama**: Download from [https://ollama.com/](https://ollama.com/)
 
@@ -459,6 +464,7 @@ Send as `multipart/form-data` with the field `file` pointing to a `.pdf` file. R
 |---|---|---|---|
 | `GET` | `/api/transactions/analytics` | ✅ | Returns income totals, expense totals, category breakdown, and rule-based advice |
 | `POST` | `/api/transactions/ai-advice` | ✅ | Ask the AI Financial Advisor for personalized recommendations |
+| `POST` | `/api/transactions/analyze-risk` | ✅ | Submits financial metrics to the AI to compute a comprehensive Risk Score (0-100) |
 
 **AI Advice Request Body (optional `user_query`):**
 ```json
@@ -530,6 +536,8 @@ Send as `multipart/form-data` with the field `file` pointing to a `.pdf` file. R
 
 Files are named with the current date: `trackify_transactions_YYYYMMDD.csv`.
 
+*(Note: The new Advanced PDF Reporting is generated entirely on the frontend via `html2canvas` and `jsPDF`, so it does not require a backend export endpoint.)*
+
 ---
 
 ### WebSocket
@@ -571,9 +579,12 @@ The main application hub. Includes:
 - **Transaction tab**: Add/view income and expenses, delete all data
 - **Analytics tab**: Visual charts (Recharts) showing income vs. expenses and category breakdown
 - **AI Advisor tab**: Interactive panel to submit natural-language queries to the LLM
-- **Recurring Expenses tab**: Schedule and view EMI/subscription deductions
-- **Export tab**: Download CSV and Excel reports
-- **Budget management**: Set a monthly budget and view warnings
+- **Risk & Debt tab**: Features the `RiskDebtAnalyzer` with AI risk scoring, debt calculators, and high-fidelity PDF report generation.
+- **Settings tab**: Set a monthly budget and view warnings
+- **Global Header**: Contains the gateway button for instant Risk Assessment PDF Report downloads.
+
+### RiskDebtAnalyzer (`RiskDebtAnalyzer.jsx`)
+Handles the brand new AI-powered Risk Scoring system and the Debt Payoff calculations. It also acts as the engine for rendering the Advanced PDF reports (featuring custom date ranges, multiple Recharts including Savings vs Expense, and custom HTML-to-Canvas snapshotting).
 
 ### ThemeContext (`contexts/ThemeContext.jsx`)
 Provides a React context to toggle between `light` and `dark` CSS themes. The preference is stored in `localStorage`.
@@ -730,7 +741,7 @@ All tests assume the backend server is running at `http://localhost:8000`.
 
 ## Known Limitations
 
-- **AI Advisor requires Ollama**: The AI advice feature (`/api/transactions/ai-advice`) will return a 500 error if Ollama is not running or the model is unavailable.
+- **AI Advisor requires Ollama**: The AI advice feature and Risk Analysis will return a 500 error if Ollama is not running or the model is unavailable locally.
 - **PDF Parsing**: The bank statement parser is optimized for a specific PDF format (date-per-line followed by amount/balance). Other bank formats may not parse correctly.
 - **WebSocket on Vercel**: The `/ws/clock` WebSocket endpoint is not compatible with Vercel's serverless function architecture.
 - **No email integration**: The forgot-password flow generates a reset token but does not send emails. In development, the token is logged to the server console.
