@@ -13,7 +13,7 @@ import logging
 from google.cloud import firestore
 import database
 from auth import get_current_user, User
-from ai_advisor import get_ai_financial_advice, stream_ai_financial_advice, keep_model_warm, FinancialAdviceSchema
+from ai_advisor import get_ai_financial_advice, stream_ai_financial_advice, keep_model_warm, FinancialAdviceSchema, get_ai_risk_score
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -259,6 +259,26 @@ async def stream_ai_advice(
             "X-Accel-Buffering": "no",   # disable nginx buffering
         }
     )
+
+class RiskScoreRequest(BaseModel):
+    liquidSavings: float
+    monthlyExpenses: float
+    totalIncome: float
+    totalExpenses: float
+
+@router.post("/analyze-risk")
+async def analyze_risk(
+    request: RiskScoreRequest,
+    current_user: User = Depends(get_current_user)
+):
+    logger.info(f"AI Risk Score requested by user {current_user.id}")
+    
+    ai_output = await get_ai_risk_score(request.model_dump())
+    
+    if not ai_output:
+        raise HTTPException(status_code=500, detail="AI Advisor failed to generate risk score")
+        
+    return ai_output
 
 
 @router.get("/ai-warmup")

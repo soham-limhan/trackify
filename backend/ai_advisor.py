@@ -253,3 +253,47 @@ async def stream_ai_financial_advice(
     except Exception as e:
         logger.exception(f"Unexpected streaming error: {e}")
         yield f"data: [ERROR] {str(e)}\n\n"
+
+async def get_ai_risk_score(data: dict) -> Optional[dict]:
+    """Generates a JSON risk score based on the user's data."""
+    prompt = (
+        f"You are Trackify AI, a smart personal financial advisor.\n"
+        f"Evaluate the following financial data and return a JSON risk assessment.\n\n"
+        f"=== FINANCIAL DATA ===\n"
+        f"Liquid Savings: Rs.{data.get('liquidSavings', 0)}\n"
+        f"Monthly Expenses: Rs.{data.get('monthlyExpenses', 0)}\n"
+        f"Total Income (all time): Rs.{data.get('totalIncome', 0)}\n"
+        f"Total Expenses (all time): Rs.{data.get('totalExpenses', 0)}\n\n"
+        f"=== OUTPUT INSTRUCTIONS ===\n"
+        f"Return ONLY a JSON object with the following keys:\n"
+        f"1. \"score\": An integer from 0 to 100 representing overall financial health (100 is best).\n"
+        f"2. \"savings_rate_status\": String. E.g., 'Healthy', 'Moderate', 'High Risk', 'Critical'.\n"
+        f"3. \"savings_rate_text\": String. 1-2 sentences analyzing their savings rate (derived from total income vs expenses).\n"
+        f"4. \"emergency_fund_status\": String. E.g., 'Healthy', 'Moderate', 'High Risk', 'Critical'.\n"
+        f"5. \"emergency_fund_text\": String. 1-2 sentences analyzing their emergency fund (liquid savings vs monthly expenses).\n\n"
+        f"=== EXAMPLE OUTPUT ===\n"
+        f"{{\n"
+        f"  \"score\": 65,\n"
+        f"  \"savings_rate_status\": \"Moderate\",\n"
+        f"  \"savings_rate_text\": \"You are saving about 15% of your income, which is okay but could be improved to 20%.\",\n"
+        f"  \"emergency_fund_status\": \"High Risk\",\n"
+        f"  \"emergency_fund_text\": \"Your liquid savings cover less than 1 month of expenses. Aim for a 3-6 month buffer.\"\n"
+        f"}}\n\n"
+        f"Return ONLY the JSON object based on the data above. No additional text."
+    )
+    try:
+        async with httpx.AsyncClient(timeout=60.0) as client:
+            logger.info("Generating AI Risk Score")
+            response = await client.post(
+                OLLAMA_API_URL,
+                json={"model": MODEL_NAME, "prompt": prompt, "stream": False, "format": "json"}
+            )
+            if response.status_code != 200:
+                logger.error(f"Ollama API error: {response.status_code}")
+                return None
+            result = response.json()
+            raw_response_text = result.get("response", "{}")
+            return json.loads(raw_response_text)
+    except Exception as e:
+        logger.exception(f"Error in get_ai_risk_score: {e}")
+        return None

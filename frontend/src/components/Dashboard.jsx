@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import axios from 'axios';
 import { 
     LogOut, PlusCircle, MinusCircle, Wallet, Target, Activity, 
-    UploadCloud, Trash2, Clock, Sparkles, TrendingUp, AlertTriangle, ChevronRight
+    UploadCloud, Trash2, Clock, Sparkles, TrendingUp, AlertTriangle, ChevronRight, Download
 } from 'lucide-react';
 import {
     BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -14,6 +14,8 @@ import {
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import html2canvas from 'html2canvas';
+
+import RiskDebtAnalyzer from './RiskDebtAnalyzer';
 
 import { API_BASE_URL, WS_BASE_URL } from '../config';
 
@@ -497,6 +499,11 @@ export default function Dashboard() {
     };
 
     const handleExportPDF = async () => {
+        if (activeTab === 'risk-debt' && window.generateRiskPdf) {
+            await window.generateRiskPdf();
+            return;
+        }
+        
         const pdf = new jsPDF('p', 'mm', 'a4');
         const pdfWidth = pdf.internal.pageSize.getWidth();
 
@@ -598,6 +605,7 @@ export default function Dashboard() {
                             { id: 'overview', label: 'Overview', icon: <Activity size={14} /> },
                             { id: 'transactions', label: 'History', icon: <Clock size={14} /> },
                             { id: 'ai', label: 'AI Advisor', icon: <Sparkles size={14} /> },
+                            { id: 'risk-debt', label: 'Risk & Debt', icon: <AlertTriangle size={14} /> },
                             { id: 'settings', label: 'Strategy', icon: <Target size={14} /> }
                         ].map(tab => (
                             <button
@@ -611,7 +619,7 @@ export default function Dashboard() {
                     </div>
 
                     <div className="flex items-center gap-2 border-l border-slate-200 dark:border-white/10 ml-4 pl-4">
-                        <button onClick={handleExportPDF} className="p-2.5 bg-white dark:bg-dark-card border border-slate-200 dark:border-white/10 rounded-xl text-indigo-600 hover:bg-indigo-600 hover:text-white transition-all shadow-sm" title="Export Report PDF"><UploadCloud size={18} /></button>
+                        <button onClick={handleExportPDF} className="p-2.5 bg-white dark:bg-dark-card border border-slate-200 dark:border-white/10 rounded-xl text-indigo-600 hover:bg-indigo-600 hover:text-white transition-all shadow-sm" title="Download Risk Report"><Download size={18} /></button>
                         <button onClick={handleResetData} className="p-2.5 bg-white dark:bg-dark-card border border-slate-200 dark:border-white/10 rounded-xl text-red-500 hover:bg-red-500 hover:text-white transition-all shadow-sm" title="Reset Data"><Trash2 size={18} /></button>
                         <button onClick={handleLogout} className="p-2.5 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-all shadow-lg active:scale-95"><LogOut size={18} /></button>
                     </div>
@@ -1248,6 +1256,11 @@ export default function Dashboard() {
                                     </div>
                                 )}
                             </div>
+                        )}
+
+
+                        {activeTab === 'risk-debt' && (
+                            <RiskDebtAnalyzer analytics={analytics} transactions={transactions} user={user} />
                         )}
 
                         {activeTab === 'settings' && (
