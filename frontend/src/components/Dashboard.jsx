@@ -19,6 +19,64 @@ import { API_BASE_URL, WS_BASE_URL } from '../config';
 
 const COLORS = ['#6366f1', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4'];
 
+// Default query run automatically when AI tab opens
+const DEFAULT_AI_QUERY = 'Give me the detail insights regarding my transactions and suggest the best way to improve my savings';
+
+/** Ensure an LLM field is always a proper array — guards against the model returning a string. */
+const toArray = (val) => (Array.isArray(val) ? val : []);
+
+/** Ensure an LLM field is always a displayable string. */
+const toStr = (val) => {
+  if (!val) return '';
+  if (typeof val === 'string') return val;
+  if (typeof val === 'object') {
+    const fs = val?.financial_summary || (val?.income !== undefined ? val : null);
+    if (fs?.income !== undefined) {
+      const rate = fs.savings_rate ?? null;
+      const savings = fs.savings ?? (fs.income - (fs.expenses || 0));
+      return `Income Rs.${Number(fs.income).toLocaleString('en-IN')} | Expenses Rs.${Number(fs.expenses||0).toLocaleString('en-IN')} | Savings Rs.${Number(savings).toLocaleString('en-IN')}${rate !== null ? ` | Savings rate ${rate}%` : ''}.`;
+    }
+    return JSON.stringify(val);
+  }
+  return String(val);
+};
+
+/** Smart summary renderer: metric cards for financial objects, quote block for strings. */
+const SummaryDisplay = ({ summary, dark = false }) => {
+  const fmt = (n) => new Intl.NumberFormat('en-IN', { style:'currency', currency:'INR', maximumFractionDigits:0 }).format(Number(n)||0);
+  const fs = (summary && typeof summary === 'object')
+    ? (summary.financial_summary || (summary.income !== undefined ? summary : null))
+    : null;
+
+  if (fs) {
+    const rate = fs.savings_rate ?? (fs.income ? ((((fs.savings ?? fs.income-(fs.expenses||0))/fs.income)*100)).toFixed(1) : null);
+    const savings = fs.savings ?? (fs.income - (fs.expenses||0));
+    const metrics = [
+      { label:'Total Income',   value: fmt(fs.income),    clr:'emerald' },
+      { label:'Total Expenses', value: fmt(fs.expenses),  clr:'red'     },
+      { label:'Net Savings',    value: fmt(savings),      clr:'indigo'  },
+      { label:'Savings Rate',   value: rate ? `${rate}%` : '--', clr:'amber' },
+    ];
+    return (
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        {metrics.map(({ label, value, clr }) => (
+          <div key={label} style={{ background:`rgba(var(--${clr}-rgb,99,102,241),0.08)`, border:`1px solid rgba(var(--${clr}-rgb,99,102,241),0.2)` }} className="p-5 rounded-[1.8rem] text-center">
+            <p className="text-[9px] font-black uppercase tracking-widest mb-2" style={{color:`var(--${clr}-400, #a5b4fc)`}}>{label}</p>
+            <p className="text-lg font-black tabular-nums" style={{color:`var(--${clr}-300, #c7d2fe)`}}>{value}</p>
+          </div>
+        ))}
+      </div>
+    );
+  }
+  const text = toStr(summary);
+  if (!text) return null;
+  return (
+    <p className={`font-bold text-base leading-relaxed italic ${ dark ? 'text-white' : 'text-slate-950' }`}>
+      "{text}"
+    </p>
+  );
+};
+
 export default function Dashboard() {
     const navigate = useNavigate();
     const [user, setUser] = useState(null);
@@ -26,12 +84,23 @@ export default function Dashboard() {
     const [analytics, setAnalytics] = useState(null);
     const [budget, setBudget] = useState(null);
 
+    // Per-section loading skeletons
+    const [loadingUser, setLoadingUser] = useState(true);
+    const [loadingTransactions, setLoadingTransactions] = useState(true);
+    const [loadingAnalytics, setLoadingAnalytics] = useState(true);
+    const [loadingBudget, setLoadingBudget] = useState(true);
+    const [loadingRecurring, setLoadingRecurring] = useState(true);
+
     // Form States
     const [amount, setAmount] = useState('');
     const [category, setCategory] = useState('');
     const [description, setDescription] = useState('');
     const [type, setType] = useState('expense');
     const [budgetLimit, setBudgetLimit] = useState('');
+    // Recurring-credit toggle inside Log Entry form
+    const [isRecurring, setIsRecurring]   = useState(false);
+    const [dayOfMonth,  setDayOfMonth]    = useState(1);
+    const [recurMonths, setRecurMonths]   = useState(12);
 
     // Upload State
     const [uploading, setUploading] = useState(false);
@@ -54,10 +123,17 @@ export default function Dashboard() {
     const wsRef = useRef(null);
 
     // Tab State
-    const [activeTab, setActiveTab] = useState('overview'); // 'overview', 'transactions', 'ai', 'settings'
+    const [activeTab, setActiveTab] = useState('overview');
     const [aiAdvice, setAiAdvice] = useState(null);
     const [loadingAI, setLoadingAI] = useState(false);
-    const [aiPrompt, setAiPrompt] = useState('');
+    const [aiPrompt, setAiPrompt] = useState(DEFAULT_AI_QUERY);
+    // Streaming AI state
+    const [streamingTokens, setStreamingTokens] = useState('');
+    const [parsedStream, setParsedStream] = useState({});
+    const [aiElapsed, setAiElapsed] = useState(0);
+    const [aiError, setAiError] = useState(null);
+    const abortControllerRef = useRef(null);
+    const aiTimerRef = useRef(null);
 
     const connectClock = useCallback(() => {
         const ws = new WebSocket(`${WS_BASE_URL}/ws/clock`);
@@ -101,32 +177,54 @@ export default function Dashboard() {
 
         window.addEventListener('scroll', handleScroll, { passive: true });
         fetchData();
+
+        // Fire-and-forget: load the Ollama model into memory now so AI Advisor is instant later
+        fetch(`${API_BASE_URL}/api/transactions/ai-warmup`, {
+            method: 'GET',
+            headers: { 'Authorization': `Bearer ${token}` }
+        }).catch(() => {}); // silently ignore if Ollama is not running
+
         return () => window.removeEventListener('scroll', handleScroll);
     }, [navigate]);
 
-    const fetchData = async () => {
-        try {
-            const [userRes, transRes, analyticsRes, budgetRes, recurringRes] = await Promise.all([
-                axiosInstance.get('/auth/me'),
-                axiosInstance.get('/transactions/'),
-                axiosInstance.get('/transactions/analytics'),
-                axiosInstance.get('/transactions/budget'),
-                axiosInstance.get('/transactions/recurring')
-            ]);
-            setUser(userRes.data);
-            setTransactions(transRes.data);
-            setAnalytics(analyticsRes.data);
-            setRecurringExpenses(recurringRes.data);
-            if (budgetRes.data) {
-                setBudget(budgetRes.data.limit_amount);
-            }
-        } catch (error) {
-            console.error("Error fetching data:", error);
-            if (error.response?.status === 401) {
+    const fetchData = () => {
+        // Each request resolves independently — data renders as it arrives
+        const handle401 = (err) => {
+            if (err.response?.status === 401) {
                 localStorage.removeItem('token');
                 navigate('/login');
             }
-        }
+        };
+
+        setLoadingUser(true);
+        axiosInstance.get('/auth/me')
+            .then(r => setUser(r.data))
+            .catch(handle401)
+            .finally(() => setLoadingUser(false));
+
+        setLoadingTransactions(true);
+        axiosInstance.get('/transactions/')
+            .then(r => setTransactions(r.data))
+            .catch(err => console.error('transactions fetch:', err))
+            .finally(() => setLoadingTransactions(false));
+
+        setLoadingAnalytics(true);
+        axiosInstance.get('/transactions/analytics')
+            .then(r => setAnalytics(r.data))
+            .catch(err => console.error('analytics fetch:', err))
+            .finally(() => setLoadingAnalytics(false));
+
+        setLoadingBudget(true);
+        axiosInstance.get('/transactions/budget')
+            .then(r => { if (r.data) setBudget(r.data.limit_amount); })
+            .catch(err => console.error('budget fetch:', err))
+            .finally(() => setLoadingBudget(false));
+
+        setLoadingRecurring(true);
+        axiosInstance.get('/transactions/recurring')
+            .then(r => setRecurringExpenses(r.data))
+            .catch(err => console.error('recurring fetch:', err))
+            .finally(() => setLoadingRecurring(false));
     };
 
     const handleLogout = () => {
@@ -134,26 +232,149 @@ export default function Dashboard() {
         navigate('/login');
     };
 
+    const cancelAI = () => {
+        if (abortControllerRef.current) abortControllerRef.current.abort();
+        clearInterval(aiTimerRef.current);
+        setLoadingAI(false);
+        setStreamingTokens('');
+        setParsedStream({});
+        setAiElapsed(0);
+    };
+
+    // Safely parse the accumulating JSON stream outside of render
+    useEffect(() => {
+        if (!streamingTokens) { setParsedStream({}); return; }
+        try {
+            // Happy path: full valid JSON
+            setParsedStream(JSON.parse(streamingTokens));
+        } catch {
+            // Partial JSON — extract what we can via regex
+            const partial = {};
+            const sumMatch = streamingTokens.match(/"summary"\s*:\s*"([^"]+)/);
+            if (sumMatch) partial.summary = sumMatch[1];
+            try {
+                const insightMatch = streamingTokens.match(/"key_insights"\s*:\s*(\[[^\]]*\])/);
+                if (insightMatch) partial.key_insights = JSON.parse(insightMatch[1]);
+            } catch { /* incomplete array, skip */ }
+            try {
+                const tipsMatch = streamingTokens.match(/"savings_tips"\s*:\s*(\[[^\]]*\])/);
+                if (tipsMatch) partial.savings_tips = JSON.parse(tipsMatch[1]);
+            } catch { /* incomplete array, skip */ }
+            try {
+                const alertMatch = streamingTokens.match(/"risk_alerts"\s*:\s*(\[[^\]]*\])/);
+                if (alertMatch) partial.risk_alerts = JSON.parse(alertMatch[1]);
+            } catch { /* incomplete array, skip */ }
+            setParsedStream(partial);
+        }
+    }, [streamingTokens]);
+
     const fetchAiAdvice = async (forceQuery = null) => {
         if (aiAdvice && !forceQuery && !aiPrompt) return;
+
+        // Cancel any in-flight stream
+        cancelAI();
+
+        const queryToSend = forceQuery || aiPrompt || null;
         setLoadingAI(true);
+        setAiAdvice(null);
+        setAiError(null);
+        setStreamingTokens('');
+        setAiElapsed(0);
+
+        // Start elapsed timer
+        const startTime = Date.now();
+        aiTimerRef.current = setInterval(() => {
+            setAiElapsed(Math.floor((Date.now() - startTime) / 1000));
+        }, 1000);
+
+        const controller = new AbortController();
+        abortControllerRef.current = controller;
+
         try {
-            const queryToSend = forceQuery || aiPrompt || null;
-            const res = await axiosInstance.post('/transactions/ai-advice', {
-                user_query: queryToSend
-            });
-            setAiAdvice(res.data);
-        } catch (error) {
-            console.error("Error fetching AI advice:", error);
+            const token = localStorage.getItem('token');
+            const res = await fetch(
+                `${API_BASE_URL}/api/transactions/ai-advice/stream`,
+                {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ user_query: queryToSend }),
+                    signal: controller.signal
+                }
+            );
+
+            if (!res.ok) {
+                throw new Error(`Server error: ${res.status}`);
+            }
+
+            const reader = res.body.getReader();
+            const decoder = new TextDecoder();
+            let accumulated = '';
+
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+
+                const chunk = decoder.decode(value, { stream: true });
+                const lines = chunk.split('\n');
+
+                for (const line of lines) {
+                    if (!line.startsWith('data: ')) continue;
+                    const payload = line.slice(6);
+
+                    if (payload === '[DONE]') {
+                        // Parse the complete accumulated JSON
+                        try {
+                            const parsed = JSON.parse(accumulated);
+                            // Force every array field to actually be an array
+                            // (the LLM occasionally returns a string or omits the field)
+                            parsed.summary = toStr(parsed.summary) || 'N/A';
+                            parsed.key_insights = toArray(parsed.key_insights);
+                            parsed.savings_tips = toArray(parsed.savings_tips);
+                            parsed.risk_alerts = toArray(parsed.risk_alerts);
+                            setAiAdvice(parsed);
+                        } catch (e) {
+                            setAiError('Could not parse AI response. Please try again.');
+                        }
+                        setLoadingAI(false);
+                        clearInterval(aiTimerRef.current);
+                        setStreamingTokens('');
+                        return;
+                    }
+
+                    if (payload.startsWith('[ERROR]')) {
+                        setAiError(payload.replace('[ERROR] ', ''));
+                        setLoadingAI(false);
+                        clearInterval(aiTimerRef.current);
+                        return;
+                    }
+
+                    // Unescape \n back to real newlines for display
+                    const token = payload.replace(/\\n/g, '\n');
+                    accumulated += token;
+                    setStreamingTokens(accumulated);
+                }
+            }
+        } catch (err) {
+            if (err.name !== 'AbortError') {
+                console.error('AI streaming error:', err);
+                setAiError('Connection failed. Is the backend running?');
+            }
         } finally {
+            clearInterval(aiTimerRef.current);
             setLoadingAI(false);
         }
     };
 
     useEffect(() => {
         if (activeTab === 'ai') {
-            fetchAiAdvice();
+            // Auto-run with the default query on first load
+            fetchAiAdvice(DEFAULT_AI_QUERY);
         }
+        // Cancel stream when leaving AI tab
+        return () => { if (activeTab === 'ai') cancelAI(); };
     }, [activeTab]);
 
     const handleResetData = async () => {
@@ -171,18 +392,34 @@ export default function Dashboard() {
     const handleTransactionSubmit = async (e) => {
         e.preventDefault();
         try {
-            await axiosInstance.post('/transactions/', {
-                amount: parseFloat(amount),
-                type,
-                category,
-                description
-            });
+            if (isRecurring) {
+                // Post to the recurring endpoint so it repeats monthly
+                await axiosInstance.post('/transactions/recurring', {
+                    amount:       parseFloat(amount),
+                    category,
+                    description,
+                    day_of_month: parseInt(dayOfMonth),
+                    total_months: parseInt(recurMonths),
+                    // Pass the type so income credits (salary) work correctly
+                    type,
+                });
+            } else {
+                await axiosInstance.post('/transactions/', {
+                    amount: parseFloat(amount),
+                    type,
+                    category,
+                    description,
+                });
+            }
             setAmount('');
             setCategory('');
             setDescription('');
+            setIsRecurring(false);
+            setDayOfMonth(1);
+            setRecurMonths(12);
             fetchData();
         } catch (error) {
-            console.error("Error adding transaction", error);
+            console.error('Error adding transaction', error);
         }
     };
 
@@ -312,6 +549,10 @@ export default function Dashboard() {
 
     // Data prep for charts
     const pieData = analytics?.expenses_by_category ? Object.entries(analytics.expenses_by_category).map(([name, value]) => ({ name, value })) : [];
+    const [trendFrom, setTrendFrom] = useState('');
+    const [trendTo,   setTrendTo]   = useState('');
+
+    // All-time daily trend
     const dailyTrendData = (() => {
         const byDate = {};
         transactions.forEach(t => {
@@ -320,7 +561,21 @@ export default function Dashboard() {
             if (t.type === 'income') byDate[day].income += t.amount;
             else byDate[day].expense += t.amount;
         });
-        return Object.values(byDate).sort((a, b) => a._ts - b._ts).slice(-30);
+        return Object.values(byDate).sort((a, b) => a._ts - b._ts);
+    })();
+
+    // Apply custom date range filter (or fall back to last 30 days when nothing is set)
+    const filteredTrendData = (() => {
+        const fromMs = trendFrom ? new Date(trendFrom).setHours(0,0,0,0) : null;
+        const toMs   = trendTo   ? new Date(trendTo).setHours(23,59,59,999) : null;
+        if (fromMs || toMs) {
+            return dailyTrendData.filter(d => {
+                if (fromMs && d._ts < fromMs) return false;
+                if (toMs   && d._ts > toMs)   return false;
+                return true;
+            });
+        }
+        return dailyTrendData.slice(-30); // default: last 30 days
     })();
 
     return (
@@ -370,9 +625,15 @@ export default function Dashboard() {
                     <div className="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-end gap-10">
                         <div>
                             <p className="text-indigo-400 font-black uppercase tracking-[0.3em] text-[10px] mb-4">Portfolio Insights</p>
-                            <h1 className="text-5xl md:text-6xl font-black text-white tracking-tighter mb-4">
-                                Hello, {user?.full_name?.split(' ')[0] || 'User'}!
-                            </h1>
+                            {loadingUser ? (
+                                <div className="space-y-3 mb-4">
+                                    <div className="skeleton-dark h-14 w-72 rounded-2xl" />
+                                </div>
+                            ) : (
+                                <h1 className="text-5xl md:text-6xl font-black text-white tracking-tighter mb-4">
+                                    Hello, {user?.full_name?.split(' ')[0] || 'User'}!
+                                </h1>
+                            )}
                             <div className="flex items-center gap-4 text-slate-400 font-bold uppercase tracking-widest text-[10px]">
                                 <span className="px-3 py-1 bg-white/5 rounded-full border border-white/5">{clockDate}</span>
                                 <span className="text-indigo-500">•</span>
@@ -382,9 +643,15 @@ export default function Dashboard() {
                         <div className="flex gap-8">
                             <div className="text-right">
                                 <p className="text-slate-500 font-black uppercase tracking-widest text-[10px] mb-1">Net Savings</p>
-                                <p className={`text-4xl font-black ${(analytics?.total_income - analytics?.total_expenses) >= 0 ? 'text-emerald-400' : 'text-red-400'} tracking-tighter`}>
-                                    {formatCurrency((analytics?.total_income || 0) - (analytics?.total_expenses || 0))}
-                                </p>
+                                {loadingAnalytics ? (
+                                    <div className="skeleton-dark h-10 w-40 rounded-xl ml-auto" />
+                                ) : (
+                                    <p className={`text-4xl font-black ${
+                                        (analytics?.total_income - analytics?.total_expenses) >= 0 ? 'text-emerald-400' : 'text-red-400'
+                                    } tracking-tighter`}>
+                                        {formatCurrency((analytics?.total_income || 0) - (analytics?.total_expenses || 0))}
+                                    </p>
+                                )}
                             </div>
                         </div>
                     </div>
@@ -402,58 +669,225 @@ export default function Dashboard() {
                             <div className="space-y-12">
                                 {/* KPI Grid */}
                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                                    {/* Income */}
                                     <div className="glass-panel rounded-[2.5rem] p-10 border border-slate-200 dark:border-white/5 shadow-xl bg-white/40 dark:bg-dark-card/40 relative group hover:-translate-y-2 transition-transform">
                                         <div className="p-3 bg-emerald-500/10 rounded-2xl text-emerald-500 w-fit mb-6">
                                             <PlusCircle size={32} />
                                         </div>
                                         <h3 className="text-xs font-black text-slate-500 uppercase tracking-widest mb-2">Total Income</h3>
-                                        <p className="text-4xl font-black text-slate-900 dark:text-white tracking-tighter">{formatCurrency(analytics?.total_income)}</p>
+                                        {loadingAnalytics
+                                            ? <div className="skeleton h-10 w-36 rounded-xl" />
+                                            : <p className="text-4xl font-black text-slate-900 dark:text-white tracking-tighter">{formatCurrency(analytics?.total_income)}</p>
+                                        }
                                     </div>
+                                    {/* Expenses */}
                                     <div className="glass-panel rounded-[2.5rem] p-10 border border-slate-200 dark:border-white/5 shadow-xl bg-white/40 dark:bg-dark-card/40 relative group hover:-translate-y-2 transition-transform">
                                         <div className="p-3 bg-red-500/10 rounded-2xl text-red-500 w-fit mb-6">
                                             <MinusCircle size={32} />
                                         </div>
                                         <h3 className="text-xs font-black text-slate-500 uppercase tracking-widest mb-2">Total Expenses</h3>
-                                        <p className="text-4xl font-black text-slate-900 dark:text-white tracking-tighter">{formatCurrency(analytics?.total_expenses)}</p>
+                                        {loadingAnalytics
+                                            ? <div className="skeleton h-10 w-36 rounded-xl" />
+                                            : <p className="text-4xl font-black text-slate-900 dark:text-white tracking-tighter">{formatCurrency(analytics?.total_expenses)}</p>
+                                        }
                                     </div>
+                                    {/* Cash on hand */}
                                     <div className="glass-panel rounded-[2.5rem] p-10 border border-slate-200 dark:border-white/5 shadow-xl bg-white/40 dark:bg-dark-card/40 relative group hover:-translate-y-2 transition-transform">
                                         <div className="p-3 bg-indigo-500/10 rounded-2xl text-indigo-500 w-fit mb-6">
                                             <Wallet size={32} />
                                         </div>
                                         <h3 className="text-xs font-black text-slate-500 uppercase tracking-widest mb-2">Cash On Hand</h3>
-                                        <p className="text-4xl font-black text-indigo-600 tracking-tighter">{formatCurrency((analytics?.total_income || 0) - (analytics?.total_expenses || 0))}</p>
+                                        {loadingAnalytics
+                                            ? <div className="skeleton h-10 w-36 rounded-xl" />
+                                            : <p className="text-4xl font-black text-indigo-600 tracking-tighter">{formatCurrency((analytics?.total_income || 0) - (analytics?.total_expenses || 0))}</p>
+                                        }
                                     </div>
                                 </div>
 
                                 {/* Analytics Charts */}
                                 <div id="charts-to-capture" className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                                     <div className="glass-panel rounded-[3rem] p-10 bg-white/50 dark:bg-dark-card/30 border border-slate-200 dark:border-white/5">
-                                        <h3 className="text-xl font-black text-slate-900 dark:text-white mb-10 tracking-tight">Fiscal Trajectory</h3>
-                                        <div className="h-[350px]">
+                                        {/* Header row */}
+                                        <div className="flex flex-wrap items-start justify-between gap-4 mb-8">
+                                            <div>
+                                                <h3 className="text-xl font-black text-slate-900 dark:text-white tracking-tight">Spending vs Saving Trends</h3>
+                                                <p className="text-[10px] font-bold text-slate-400 mt-1 uppercase tracking-widest">
+                                                    {filteredTrendData.length} day{filteredTrendData.length !== 1 ? 's' : ''} shown
+                                                </p>
+                                            </div>
+                                            {/* Quick range pills */}
+                                            <div className="flex items-center gap-2 flex-wrap">
+                                                {[['7D',7],['30D',30],['90D',90],['All',null]].map(([label, days]) => {
+                                                    const isActive = (() => {
+                                                        if (!trendFrom && !trendTo) return days === 30;
+                                                        if (days === null) return !trendFrom && !trendTo;
+                                                        return false;
+                                                    })();
+                                                    return (
+                                                        <button
+                                                            key={label}
+                                                            onClick={() => {
+                                                                setTrendFrom('');
+                                                                setTrendTo('');
+                                                                if (days !== null) {
+                                                                    const d = new Date();
+                                                                    d.setDate(d.getDate() - days);
+                                                                    setTrendFrom(d.toISOString().slice(0,10));
+                                                                }
+                                                            }}
+                                                            className={`px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border ${
+                                                                isActive
+                                                                    ? 'bg-indigo-600 text-white border-indigo-600 shadow-lg shadow-indigo-500/20'
+                                                                    : 'border-slate-200 dark:border-white/10 text-slate-500 dark:text-slate-400 hover:border-indigo-500/40 hover:text-indigo-500'
+                                                            }`}
+                                                        >
+                                                            {label}
+                                                        </button>
+                                                    );
+                                                })}
+                                            </div>
+                                        </div>
+
+                                        {/* Custom date range inputs */}
+                                        <div className="flex items-center gap-3 mb-8 flex-wrap">
+                                            <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Custom range</span>
+                                            <input
+                                                type="date"
+                                                value={trendFrom}
+                                                max={trendTo || undefined}
+                                                onChange={e => setTrendFrom(e.target.value)}
+                                                className="px-4 py-2 rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 text-xs font-bold outline-none focus:ring-2 focus:ring-indigo-500/30 transition-all"
+                                            />
+                                            <span className="text-slate-300 dark:text-slate-600 font-black">→</span>
+                                            <input
+                                                type="date"
+                                                value={trendTo}
+                                                min={trendFrom || undefined}
+                                                onChange={e => setTrendTo(e.target.value)}
+                                                className="px-4 py-2 rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 text-xs font-bold outline-none focus:ring-2 focus:ring-indigo-500/30 transition-all"
+                                            />
+                                            {(trendFrom || trendTo) && (
+                                                <button
+                                                    onClick={() => { setTrendFrom(''); setTrendTo(''); }}
+                                                    className="text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-red-400 transition-colors px-2"
+                                                >✕ Clear</button>
+                                            )}
+                                        </div>
+
+                                        {/* Legend */}
+                                        <div className="flex items-center gap-6 mb-6">
+                                            <div className="flex items-center gap-2">
+                                                <div className="w-6 h-1 rounded-full bg-emerald-500"/>
+                                                <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">Income</span>
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                <div className="w-6 h-1 rounded-full bg-red-500"/>
+                                                <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">Spending</span>
+                                            </div>
+                                        </div>
+
+                                        <div className="h-[280px]">
                                             <ResponsiveContainer width="100%" height="100%">
-                                                <ComposedChart data={dailyTrendData}>
+                                                <ComposedChart data={filteredTrendData}>
                                                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f030" />
                                                     <XAxis dataKey="date" tick={{ fill: '#94a3b8', fontSize: 10, fontWeight: 'bold' }} axisLine={false} tickLine={false} />
                                                     <YAxis tickFormatter={v => `₹${v >= 1000 ? (v/1000).toFixed(0)+'k' : v}`} tick={{ fill: '#94a3b8', fontSize: 10 }} axisLine={false} tickLine={false} />
-                                                    <Tooltip contentStyle={{ borderRadius: '1.5rem', border: 'none', background: '#0f172a', color: '#fff' }} />
-                                                    <Area type="monotone" dataKey="income" stroke="#10b981" strokeWidth={4} fill="rgba(16, 185, 129, 0.1)" />
-                                                    <Area type="monotone" dataKey="expense" stroke="#ef4444" strokeWidth={4} fill="rgba(239, 68, 68, 0.1)" />
+                                                    <Tooltip
+                                                        contentStyle={{ borderRadius: '1.5rem', border: 'none', background: '#0f172a', color: '#fff', fontSize: 12 }}
+                                                        formatter={(v, name) => [formatCurrency(v), name === 'income' ? 'Income' : 'Spending']}
+                                                    />
+                                                    <Area type="monotone" dataKey="income" stroke="#10b981" strokeWidth={3} fill="rgba(16,185,129,0.08)" dot={false} />
+                                                    <Area type="monotone" dataKey="expense" stroke="#ef4444" strokeWidth={3} fill="rgba(239,68,68,0.08)" dot={false} />
                                                 </ComposedChart>
                                             </ResponsiveContainer>
                                         </div>
                                     </div>
-                                    <div className="glass-panel rounded-[3rem] p-10 bg-white/50 dark:bg-dark-card/30 border border-slate-200 dark:border-white/5 flex flex-col items-center">
-                                        <h3 className="text-xl font-black text-slate-900 dark:text-white mb-10 tracking-tight w-full">Category Allocation</h3>
-                                        <div className="h-[350px] w-full">
-                                            <ResponsiveContainer width="100%" height="100%">
-                                                <PieChart>
-                                                    <Pie data={pieData} cx="50%" cy="50%" innerRadius={80} outerRadius={110} paddingAngle={8} dataKey="value" stroke="none">
-                                                        {pieData.map((entry, index) => <Cell key={index} fill={COLORS[index % COLORS.length]} cornerRadius={10} />)}
-                                                    </Pie>
-                                                    <Tooltip formatter={v => formatCurrency(v)} />
-                                                </PieChart>
-                                            </ResponsiveContainer>
+                                    <div className="glass-panel rounded-[3rem] p-10 bg-white/50 dark:bg-dark-card/30 border border-slate-200 dark:border-white/5 flex flex-col">
+                                        {/* Header */}
+                                        <div className="flex items-center justify-between mb-8">
+                                            <h3 className="text-xl font-black text-slate-900 dark:text-white tracking-tight">Category Allocation</h3>
+                                            <span className="text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full bg-indigo-500/10 text-indigo-500 border border-indigo-500/20">
+                                                {pieData.length} categories
+                                            </span>
                                         </div>
+
+                                        {pieData.length === 0 ? (
+                                            <div className="flex-1 flex items-center justify-center text-slate-400 text-sm font-bold">No expense data yet</div>
+                                        ) : (() => {
+                                            const totalPie = pieData.reduce((s, d) => s + d.value, 0);
+                                            const sorted   = [...pieData].sort((a, b) => b.value - a.value);
+                                            return (
+                                                <div className="flex flex-col gap-8">
+                                                    {/* Donut + centre stat */}
+                                                    <div className="relative h-[240px] w-full">
+                                                        <ResponsiveContainer width="100%" height="100%">
+                                                            <PieChart>
+                                                                <Pie
+                                                                    data={sorted}
+                                                                    cx="50%" cy="50%"
+                                                                    innerRadius={72} outerRadius={104}
+                                                                    paddingAngle={4}
+                                                                    dataKey="value"
+                                                                    stroke="none"
+                                                                    startAngle={90} endAngle={-270}
+                                                                >
+                                                                    {sorted.map((_, i) => (
+                                                                        <Cell key={i} fill={COLORS[i % COLORS.length]} cornerRadius={8} />
+                                                                    ))}
+                                                                </Pie>
+                                                                <Tooltip
+                                                                    content={({ active, payload }) => {
+                                                                        if (!active || !payload?.length) return null;
+                                                                        const d = payload[0];
+                                                                        const pct = ((d.value / totalPie) * 100).toFixed(1);
+                                                                        return (
+                                                                            <div className="px-4 py-3 rounded-2xl text-white text-xs font-black shadow-2xl" style={{ background: d.payload.fill, minWidth: 140 }}>
+                                                                                <p className="uppercase tracking-widest text-[9px] opacity-70 mb-1">{d.name}</p>
+                                                                                <p className="text-base">{formatCurrency(d.value)}</p>
+                                                                                <p className="opacity-70">{pct}% of spend</p>
+                                                                            </div>
+                                                                        );
+                                                                    }}
+                                                                />
+                                                            </PieChart>
+                                                        </ResponsiveContainer>
+                                                        {/* Centre label */}
+                                                        <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                                                            <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500">Total Spend</p>
+                                                            <p className="text-xl font-black text-slate-900 dark:text-white tabular-nums mt-1">{formatCurrency(totalPie)}</p>
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Legend rows */}
+                                                    <div className="space-y-3">
+                                                        {sorted.map((item, i) => {
+                                                            const pct = ((item.value / totalPie) * 100).toFixed(1);
+                                                            const clr = COLORS[i % COLORS.length];
+                                                            return (
+                                                                <div key={item.name} className="flex items-center gap-3 group">
+                                                                    {/* Colour dot */}
+                                                                    <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: clr }} />
+                                                                    {/* Category name */}
+                                                                    <span className="text-xs font-bold text-slate-700 dark:text-slate-300 flex-1 truncate group-hover:text-slate-900 dark:group-hover:text-white transition-colors">
+                                                                        {item.name}
+                                                                    </span>
+                                                                    {/* Progress bar */}
+                                                                    <div className="w-24 h-1.5 rounded-full bg-slate-100 dark:bg-white/5 overflow-hidden">
+                                                                        <div
+                                                                            className="h-full rounded-full transition-all duration-700"
+                                                                            style={{ width: `${pct}%`, background: clr }}
+                                                                        />
+                                                                    </div>
+                                                                    {/* Amount + % */}
+                                                                    <span className="text-[10px] font-black text-slate-500 dark:text-slate-400 tabular-nums w-8 text-right">{pct}%</span>
+                                                                    <span className="text-xs font-black text-slate-700 dark:text-white tabular-nums w-24 text-right">{formatCurrency(item.value)}</span>
+                                                                </div>
+                                                            );
+                                                        })}
+                                                    </div>
+                                                </div>
+                                            );
+                                        })()}
                                     </div>
                                 </div>
                             </div>
@@ -465,16 +899,84 @@ export default function Dashboard() {
                                     <div className="glass-panel rounded-[2.5rem] p-10 border border-slate-200 dark:border-white/5 bg-white/40 dark:bg-dark-card/40">
                                         <h3 className="text-xl font-black text-slate-900 dark:text-white mb-8">Log Entry</h3>
                                         <form onSubmit={handleTransactionSubmit} className="space-y-6">
+                                            {/* Income / Expense toggle */}
                                             <div className="flex p-1 bg-slate-100 dark:bg-slate-950 rounded-2xl">
                                                 <button type="button" onClick={() => setType('income')} className={`flex-1 py-3 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all ${type === 'income' ? 'bg-indigo-600 text-white shadow-lg' : 'text-slate-600 dark:text-slate-400'}`}>Income</button>
                                                 <button type="button" onClick={() => setType('expense')} className={`flex-1 py-3 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all ${type === 'expense' ? 'bg-indigo-600 text-white shadow-lg' : 'text-slate-600 dark:text-slate-400'}`}>Expense</button>
                                             </div>
+
+                                            {/* Core fields */}
                                             <div className="space-y-4">
-                                                <input type="number" required placeholder="Amount (₹)" value={amount} onChange={e => setAmount(e.target.value)} className="w-full px-6 py-4 rounded-2xl border border-slate-200 dark:border-white/5 font-bold outline-none ring-2 ring-transparent focus:ring-indigo-600/20 text-slate-900 dark:text-white" />
-                                                <input type="text" required placeholder="Category" value={category} onChange={e => setCategory(e.target.value)} className="w-full px-6 py-4 rounded-2xl border border-slate-200 dark:border-white/5 font-bold outline-none ring-2 ring-transparent focus:ring-indigo-600/20 text-slate-900 dark:text-white" />
-                                                <input type="text" placeholder="Narrative" value={description} onChange={e => setDescription(e.target.value)} className="w-full px-6 py-4 rounded-2xl border border-slate-200 dark:border-white/5 font-bold outline-none ring-2 ring-transparent focus:ring-indigo-600/20 text-slate-900 dark:text-white" />
+                                                <input type="number" required placeholder="Amount (₹)" value={amount} onChange={e => setAmount(e.target.value)} className="w-full px-6 py-4 rounded-2xl border border-slate-200 dark:border-white/5 font-bold outline-none ring-2 ring-transparent focus:ring-indigo-600/20 text-slate-900 dark:text-white bg-transparent" />
+                                                <input type="text" required placeholder="Category" value={category} onChange={e => setCategory(e.target.value)} className="w-full px-6 py-4 rounded-2xl border border-slate-200 dark:border-white/5 font-bold outline-none ring-2 ring-transparent focus:ring-indigo-600/20 text-slate-900 dark:text-white bg-transparent" />
+                                                <input type="text" placeholder="Narrative" value={description} onChange={e => setDescription(e.target.value)} className="w-full px-6 py-4 rounded-2xl border border-slate-200 dark:border-white/5 font-bold outline-none ring-2 ring-transparent focus:ring-indigo-600/20 text-slate-900 dark:text-white bg-transparent" />
                                             </div>
-                                            <button type="submit" className={`w-full py-4 rounded-2xl font-black text-white hover:scale-[1.02] transform transition-all active:scale-95 ${type === 'income' ? 'bg-emerald-500 shadow-emerald-500/20' : 'bg-red-500 shadow-red-500/20'} shadow-2xl`}>Commit Record</button>
+
+                                            {/* ── Repeat monthly toggle ─────────────────────────── */}
+                                            <div className={`rounded-2xl border transition-all overflow-hidden ${ isRecurring ? 'border-indigo-500/40 bg-indigo-500/5' : 'border-slate-200 dark:border-white/5' }`}>
+                                                {/* Toggle row */}
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setIsRecurring(r => !r)}
+                                                    className="w-full flex items-center justify-between px-5 py-4"
+                                                >
+                                                    <div className="flex items-center gap-3">
+                                                        <span className="text-lg">🔁</span>
+                                                        <div className="text-left">
+                                                            <p className="text-xs font-black text-slate-700 dark:text-slate-200">Repeat monthly</p>
+                                                            <p className="text-[10px] text-slate-400">e.g. salary, rent, subscription</p>
+                                                        </div>
+                                                    </div>
+                                                    {/* Pill switch */}
+                                                    <div className={`w-11 h-6 rounded-full transition-colors relative ${ isRecurring ? 'bg-indigo-600' : 'bg-slate-200 dark:bg-slate-700' }`}>
+                                                        <div className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-transform ${ isRecurring ? 'translate-x-6' : 'translate-x-1' }`} />
+                                                    </div>
+                                                </button>
+
+                                                {/* Expanded options */}
+                                                {isRecurring && (
+                                                    <div className="px-5 pb-5 space-y-4 border-t border-indigo-500/10">
+                                                        <div className="grid grid-cols-2 gap-4 pt-4">
+                                                            <div>
+                                                                <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 block">Day of month</label>
+                                                                <input
+                                                                    type="number"
+                                                                    min={1} max={28}
+                                                                    value={dayOfMonth}
+                                                                    onChange={e => setDayOfMonth(e.target.value)}
+                                                                    className="w-full px-4 py-3 rounded-xl border border-indigo-500/20 bg-white dark:bg-slate-900 font-black text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-indigo-500/30 text-sm"
+                                                                />
+                                                                <p className="text-[9px] text-slate-400 mt-1">Credited on the {dayOfMonth}{dayOfMonth==1?'st':dayOfMonth==2?'nd':dayOfMonth==3?'rd':'th'} of each month</p>
+                                                            </div>
+                                                            <div>
+                                                                <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 block">Duration</label>
+                                                                <select
+                                                                    value={recurMonths}
+                                                                    onChange={e => setRecurMonths(e.target.value)}
+                                                                    className="w-full px-4 py-3 rounded-xl border border-indigo-500/20 bg-white dark:bg-slate-900 font-black text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-indigo-500/30 text-sm"
+                                                                >
+                                                                    {[3,6,12,24,36,60].map(m => (
+                                                                        <option key={m} value={m}>{m} months{m===12?' (1 yr)':m===24?' (2 yr)':m===36?' (3 yr)':m===60?' (5 yr)':''}</option>
+                                                                    ))}
+                                                                </select>
+                                                            </div>
+                                                        </div>
+                                                        <div className="flex items-center gap-2 p-3 rounded-xl bg-indigo-500/10 border border-indigo-500/15">
+                                                            <span className="text-indigo-400 text-xs">ℹ</span>
+                                                            <p className="text-[10px] font-bold text-indigo-400">
+                                                                {amount ? `₹${Number(amount).toLocaleString('en-IN')}` : '...'} will be auto-recorded on the {dayOfMonth}{dayOfMonth==1?'st':dayOfMonth==2?'nd':dayOfMonth==3?'rd':'th'} for {recurMonths} months
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
+
+                                            <button
+                                                type="submit"
+                                                className={`w-full py-4 rounded-2xl font-black text-white hover:scale-[1.02] transform transition-all active:scale-95 ${ type === 'income' ? 'bg-emerald-500 shadow-emerald-500/20' : 'bg-red-500 shadow-red-500/20'} shadow-2xl`}
+                                            >
+                                                {isRecurring ? '🔁 Set Recurring' : 'Commit Record'}
+                                            </button>
                                         </form>
                                     </div>
                                     <div className="glass-panel rounded-[2.5rem] p-10 border border-slate-200 dark:border-white/5 bg-indigo-600/5">
@@ -523,16 +1025,122 @@ export default function Dashboard() {
                         {activeTab === 'ai' && (
                             <div className="max-w-5xl mx-auto space-y-10">
                                 {loadingAI ? (
-                                    <div className="dark-card rounded-[4rem] p-32 text-center overflow-hidden relative">
-                                        <div className="absolute inset-0 bg-gradient-to-r from-indigo-500/10 to-purple-500/10 animate-pulse"></div>
-                                        <div className="relative z-10 space-y-8">
-                                            <Sparkles className="text-indigo-400 animate-spin-slow mx-auto" size={64} />
-                                            <h3 className="text-4xl font-black text-white tracking-tighter">Strategic Synthesis</h3>
-                                            <p className="text-slate-400 font-bold italic text-sm">The local LLM is parsing your spending patterns... hold (~30s)</p>
-                                            <div className="w-full max-w-sm mx-auto h-1.5 bg-white/5 rounded-full overflow-hidden">
-                                                <motion.div initial={{ width: "0%" }} animate={{ width: "100%" }} transition={{ duration: 30, ease: "linear" }} className="h-full bg-indigo-600" />
+                                    <div className="dark-card rounded-[4rem] overflow-hidden relative" style={{border:'1px solid rgba(99,102,241,0.2)'}}>
+                                        <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/5 to-purple-500/5" />
+                                        {/* Header bar */}
+                                        <div className="relative z-10 flex items-center justify-between px-10 pt-10 pb-6 border-b border-white/5">
+                                            <div className="flex items-center gap-4">
+                                                <Sparkles className="text-indigo-400 animate-spin-slow" size={28} />
+                                                <div>
+                                                    <p className="text-white font-black text-lg tracking-tight">
+                                                        {aiElapsed < 5 ? 'Warming up LLM...' : streamingTokens ? 'Building your report...' : 'Generating insights...'}
+                                                    </p>
+                                                    <p className="text-slate-500 text-[10px] font-black uppercase tracking-widest">
+                                                        {aiElapsed}s elapsed
+                                                    </p>
+                                                </div>
+                                            </div>
+                                            <button
+                                                onClick={cancelAI}
+                                                className="px-5 py-2.5 rounded-2xl bg-white/5 border border-white/10 text-[10px] font-black text-slate-400 uppercase tracking-widest hover:bg-red-500/10 hover:text-red-400 hover:border-red-500/20 transition-all"
+                                            >
+                                                Cancel
+                                            </button>
+                                        </div>
+
+                                        {/* Live informative preview — driven by parsedStream state, never inline parsing */}
+                                        <div className="relative z-10 px-10 py-8 space-y-6">
+                                            {(parsedStream.summary || toArray(parsedStream.key_insights).length || toArray(parsedStream.savings_tips).length || toArray(parsedStream.risk_alerts).length) ? (
+                                                <div className="space-y-6">
+                                                    {parsedStream.summary && (
+                                                        <div className="p-8 rounded-[2.5rem] bg-white/5 border border-white/10">
+                                                            <p className="text-[10px] font-black text-indigo-400 uppercase tracking-widest mb-3 flex items-center gap-2">
+                                                                <Sparkles size={12}/> Summary
+                                                            </p>
+                                                            <SummaryDisplay summary={parsedStream.summary} dark={true} />
+                                                            <span className="cursor-blink ml-1 text-indigo-400"/>
+                                                        </div>
+                                                    )}
+                                                    {toArray(parsedStream.key_insights).length > 0 && (
+                                                        <div>
+                                                            <p className="text-[10px] font-black text-indigo-400 uppercase tracking-widest mb-3 px-2">Key Insights</p>
+                                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                                {toArray(parsedStream.key_insights).map((ins, i) => (
+                                                                    <div key={i} className="p-6 rounded-[2rem] bg-white/5 border border-white/10 flex flex-col gap-2">
+                                                                        <div className="flex justify-between items-center">
+                                                                            <span className="text-[9px] font-black text-indigo-300 uppercase tracking-widest">{ins.category}</span>
+                                                                            <span className={`px-3 py-0.5 rounded-full text-[8px] font-black uppercase ${ins.priority === 'High' ? 'bg-red-500/20 text-red-400' : 'bg-amber-500/20 text-amber-400'}`}>{ins.priority}</span>
+                                                                        </div>
+                                                                        <p className="text-sm font-bold text-white leading-snug">{ins.action}</p>
+                                                                    </div>
+                                                                ))}
+                                                            </div>
+                                                        </div>
+                                                    )}
+                                                    {(toArray(parsedStream.savings_tips).length > 0 || toArray(parsedStream.risk_alerts).length > 0) && (
+                                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                                            {toArray(parsedStream.risk_alerts).length > 0 && (
+                                                                <div className="space-y-3">
+                                                                    <p className="text-[9px] font-black text-red-400 uppercase tracking-widest flex items-center gap-2 px-2"><AlertTriangle size={10}/> Risk Alerts</p>
+                                                                    {toArray(parsedStream.risk_alerts).map((a, i) => (
+                                                                        <div key={i} className="flex gap-3 p-4 rounded-[1.5rem] bg-red-500/5 border border-red-500/10 text-xs font-bold text-red-300/80">
+                                                                            <AlertTriangle className="text-red-400 shrink-0 mt-0.5" size={14}/> {a}
+                                                                        </div>
+                                                                    ))}
+                                                                </div>
+                                                            )}
+                                                            {toArray(parsedStream.savings_tips).length > 0 && (
+                                                                <div className="space-y-3">
+                                                                    <p className="text-[9px] font-black text-emerald-400 uppercase tracking-widest flex items-center gap-2 px-2"><TrendingUp size={10}/> Savings Tips</p>
+                                                                    {toArray(parsedStream.savings_tips).map((t, i) => (
+                                                                        <div key={i} className="flex gap-3 p-4 rounded-[1.5rem] bg-emerald-500/5 border border-emerald-500/10 text-xs font-bold text-emerald-300/80">
+                                                                            <TrendingUp className="text-emerald-400 shrink-0 mt-0.5" size={14}/> {t}
+                                                                        </div>
+                                                                    ))}
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            ) : (
+                                                <div className="flex flex-col items-center justify-center py-12 gap-4 text-center">
+                                                    <div className="w-14 h-14 rounded-[1.5rem] bg-indigo-600/10 border border-indigo-500/20 flex items-center justify-center">
+                                                        <Sparkles className="text-indigo-400 animate-pulse" size={24}/>
+                                                    </div>
+                                                    <p className="text-slate-400 font-bold text-sm">
+                                                        {aiElapsed < 5 ? 'Loading model into memory...' : 'Analysing your transactions...'}
+                                                    </p>
+                                                    <span className="cursor-blink text-indigo-400"/>
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        {/* Indeterminate progress bar */}
+                                        <div className="relative z-10 px-10 pb-10">
+                                            <div className="w-full h-1 bg-white/5 rounded-full overflow-hidden">
+                                                <motion.div
+                                                    className="h-full bg-indigo-600"
+                                                    animate={{ x: ['-100%', '200%'] }}
+                                                    transition={{ duration: 1.8, ease: 'easeInOut', repeat: Infinity }}
+                                                />
                                             </div>
                                         </div>
+                                    </div>
+                                ) : aiError ? (
+                                    <div className="dark-card rounded-[4rem] p-20 text-center space-y-8" style={{border:'1px solid rgba(239,68,68,0.2)'}}>
+                                        <div className="w-20 h-20 bg-red-500/10 rounded-[2rem] flex items-center justify-center mx-auto border border-red-500/20">
+                                            <AlertTriangle className="text-red-400" size={40} />
+                                        </div>
+                                        <div>
+                                            <h3 className="text-2xl font-black text-white tracking-tight mb-2">AI Advisor Unavailable</h3>
+                                            <p className="text-red-400/70 font-bold text-sm">{aiError}</p>
+                                        </div>
+                                        <button
+                                            onClick={() => { setAiError(null); fetchAiAdvice(); }}
+                                            className="px-10 py-4 bg-indigo-600 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-indigo-700 transition-all"
+                                        >
+                                            Retry
+                                        </button>
                                     </div>
                                 ) : aiAdvice ? (
                                     <div className="space-y-10">
@@ -551,11 +1159,11 @@ export default function Dashboard() {
 
                                             <div className="space-y-12 relative z-10">
                                                 <div className="p-12 rounded-[3.5rem] bg-white text-slate-950 shadow-4xl">
-                                                    <p className="text-3xl font-black leading-tight tracking-tight italic">"{aiAdvice.summary}"</p>
+                                                    <SummaryDisplay summary={aiAdvice.summary} dark={false} />
                                                 </div>
 
                                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                                                    {aiAdvice.key_insights.map((insight, i) => (
+                                                    {toArray(aiAdvice.key_insights).map((insight, i) => (
                                                         <div key={i} className="p-10 rounded-[3rem] bg-slate-950/60 border border-white/5 hover:border-white/20 transition-all">
                                                             <div className="flex justify-between items-center mb-8">
                                                                 <span className="text-[10px] font-black text-indigo-400 uppercase tracking-widest">{insight.category}</span>
@@ -572,7 +1180,7 @@ export default function Dashboard() {
                                                             <div className="w-2 h-6 bg-red-500 rounded-full"></div> Risk Protocols
                                                         </h4>
                                                         <div className="space-y-4">
-                                                            {aiAdvice.risk_alerts.map((alert, i) => (
+                                                            {toArray(aiAdvice.risk_alerts).map((alert, i) => (
                                                                 <div key={i} className="flex gap-5 p-6 rounded-[2rem] bg-red-500/5 border border-red-500/10 text-sm font-bold text-red-100/70">
                                                                     <AlertTriangle className="text-red-500 shrink-0" size={20} />
                                                                     <span>{alert}</span>
@@ -585,7 +1193,7 @@ export default function Dashboard() {
                                                             <div className="w-2 h-6 bg-emerald-400 rounded-full"></div> Growth Potential
                                                         </h4>
                                                         <div className="space-y-4">
-                                                            {aiAdvice.savings_tips.map((tip, i) => (
+                                                            {toArray(aiAdvice.savings_tips).map((tip, i) => (
                                                                 <div key={i} className="flex gap-5 p-6 rounded-[2rem] bg-emerald-500/5 border border-emerald-500/10 text-sm font-bold text-emerald-100/70">
                                                                     <TrendingUp className="text-emerald-500 shrink-0" size={20} />
                                                                     <span>{tip}</span>

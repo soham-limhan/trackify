@@ -13,7 +13,7 @@ import logging
 from google.cloud import firestore
 import database
 from auth import get_current_user, User
-from ai_advisor import get_ai_financial_advice, FinancialAdviceSchema
+from ai_advisor import get_ai_financial_advice, stream_ai_financial_advice, keep_model_warm, FinancialAdviceSchema
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -93,9 +93,6 @@ def add_transaction(transaction: TransactionCreate, db: firestore.Client = Depen
 
 @router.get("/", response_model=List[TransactionResponse])
 def get_transactions(db: firestore.Client = Depends(database.get_db), current_user: User = Depends(get_current_user)):
-    # Trigger processing of recurring expenses
-    process_recurring_expenses(db, current_user.id)
-    
     # Simplified query to avoid composite index requirement
     transactions_ref = db.collection('transactions').where('user_id', '==', current_user.id).stream()
     
@@ -137,9 +134,6 @@ def get_budget(db: firestore.Client = Depends(database.get_db), current_user: Us
 
 @router.get("/analytics", response_model=AnalyticsSummary)
 async def get_analytics(db: firestore.Client = Depends(database.get_db), current_user: User = Depends(get_current_user)):
-    # Trigger processing of recurring expenses
-    process_recurring_expenses(db, current_user.id)
-    
     transactions_ref = db.collection('transactions').where('user_id', '==', current_user.id).stream()
     
     total_income = 0.0
@@ -236,6 +230,47 @@ async def get_ai_advice(
         raise HTTPException(status_code=500, detail="AI Advisor failed to generate advice")
         
     return ai_output
+
+
+@router.post("/ai-advice/stream")
+async def stream_ai_advice(
+    request: Optional[AIAdviceRequest] = None,
+    db: firestore.Client = Depends(database.get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Server-Sent Events streaming endpoint for the AI advisor.
+    The frontend reads tokens in real-time as the LLM generates them.
+    """
+    user_query = request.user_query if request else None
+    logger.info(f"Streaming AI advice requested by user {current_user.id}. Query: {user_query}")
+
+    transactions_ref = db.collection('transactions').where('user_id', '==', current_user.id).stream()
+    all_transactions = [doc.to_dict() for doc in transactions_ref]
+
+    if not all_transactions:
+        raise HTTPException(status_code=404, detail="No transactions found for analysis")
+
+    return StreamingResponse(
+        stream_ai_financial_advice(all_transactions, user_query=user_query),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "X-Accel-Buffering": "no",   # disable nginx buffering
+        }
+    )
+
+
+@router.get("/ai-warmup")
+async def warmup_ai_model(current_user: User = Depends(get_current_user)):
+    """
+    Fire-and-forget endpoint called on dashboard mount.
+    Loads the Ollama model into GPU/RAM so it is hot when the user opens AI Advisor.
+    Always returns immediately — the warm-up runs in the background.
+    """
+    import asyncio
+    asyncio.create_task(keep_model_warm())
+    return {"status": "warming"}
 
 @router.delete("/reset")
 def reset_data(db: firestore.Client = Depends(database.get_db), current_user: User = Depends(get_current_user)):

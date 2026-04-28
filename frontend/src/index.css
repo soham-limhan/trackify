@@ -186,3 +186,73 @@
   50%  { background-position: 400% 0; }
   100% { background-position: 0 0; }
 }
+
+/* ── Skeleton shimmer (light) ── */
+@keyframes shimmer {
+  0%   { background-position: -600px 0; }
+  100% { background-position: 600px 0; }
+}
+
+/* ── Skeleton shimmer (dark / always-dark surfaces) ── */
+@keyframes shimmer-dark {
+  0%   { background-position: -600px 0; }
+  100% { background-position: 600px 0; }
+}
+
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    rgba(203, 213, 225, 0.4) 25%,
+    rgba(226, 232, 240, 0.9) 50%,
+    rgba(203, 213, 225, 0.4) 75%
+  );
+  background-size: 600px 100%;
+  animation: shimmer 1.4s ease-in-out infinite;
+  border-radius: 0.75rem;
+}
+
+.dark .skeleton {
+  background: linear-gradient(
+    90deg,
+    rgba(30, 41, 59, 0.6) 25%,
+    rgba(51, 65, 85, 0.8) 50%,
+    rgba(30, 41, 59, 0.6) 75%
+  );
+  background-size: 600px 100%;
+  animation: shimmer-dark 1.4s ease-in-out infinite;
+}
+
+/* Dark-card surface variant (always dark regardless of theme) */
+.skeleton-dark {
+  background: linear-gradient(
+    90deg,
+    rgba(15, 23, 42, 0.8) 25%,
+    rgba(30, 41, 59, 0.9) 50%,
+    rgba(15, 23, 42, 0.8) 75%
+  );
+  background-size: 600px 100%;
+  animation: shimmer-dark 1.4s ease-in-out infinite;
+  border-radius: 0.75rem;
+}
+
+/* ── Typing cursor blink for streaming text ── */
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0; }
+}
+.cursor-blink::after {
+  content: '▋';
+  display: inline-block;
+  color: #6366f1;
+  animation: blink 1s step-end infinite;
+  margin-left: 2px;
+}
+
+/* ── Spin slow for AI sparkle icon ── */
+@keyframes spin-slow {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+.animate-spin-slow {
+  animation: spin-slow 3s linear infinite;
+}
