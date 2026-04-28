@@ -3,12 +3,20 @@ from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from pydantic import BaseModel, EmailStr
 from datetime import datetime, timedelta, timezone
 from typing import Optional
+import random
 import bcrypt
 from jose import JWTError, jwt
 from google.oauth2 import id_token
 from google.auth.transport import requests
 from google.cloud import firestore
 import database
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
 
 router = APIRouter()
 
@@ -51,6 +59,10 @@ class Token(BaseModel):
 class ForgotPassword(BaseModel):
     email: EmailStr
 
+class VerifyOTP(BaseModel):
+    email: EmailStr
+    otp: str
+
 class ResetPassword(BaseModel):
     token: str
     new_password: str
@@ -61,6 +73,39 @@ def verify_password(plain_password: str, hashed_password: str):
 def get_password_hash(password: str):
     salt = bcrypt.gensalt()
     return bcrypt.hashpw(password.encode('utf-8'), salt).decode('utf-8')
+
+def send_otp_email(to_email: str, otp: str, subject: str = "Trackify - Password Reset OTP", is_registration: bool = False):
+    smtp_server = os.getenv("SMTP_SERVER", "smtp.gmail.com")
+    smtp_port = int(os.getenv("SMTP_PORT", 587))
+    smtp_user = os.getenv("SMTP_USERNAME")
+    smtp_pass = os.getenv("SMTP_PASSWORD")
+
+    if not smtp_user or not smtp_pass:
+        print(f"Warning: SMTP credentials not set. Would have sent OTP {otp} to {to_email}")
+        return
+
+    msg = MIMEMultipart()
+    msg['From'] = smtp_user
+    msg['To'] = to_email
+    msg['Subject'] = subject
+
+    if is_registration:
+        body = f"Welcome to Trackify!\n\nYour registration OTP is: {otp}\n\nThis OTP is valid for 10 minutes."
+    else:
+        body = f"Your password reset OTP is: {otp}\n\nThis OTP is valid for 10 minutes."
+        
+    msg.attach(MIMEText(body, 'plain'))
+
+    try:
+        server = smtplib.SMTP(smtp_server, smtp_port)
+        server.starttls()
+        server.login(smtp_user, smtp_pass)
+        server.send_message(msg)
+        server.quit()
+        print(f"Successfully sent OTP email to {to_email}")
+    except Exception as e:
+        print(f"Failed to send email: {e}")
+        raise HTTPException(status_code=500, detail="Failed to send OTP email")
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     to_encode = data.copy()
@@ -101,7 +146,7 @@ async def get_current_user(token: str = Depends(oauth2_scheme), db: firestore.Cl
         
     return User(**user_data)
 
-@router.post("/register", response_model=Token)
+@router.post("/register")
 def register(user: UserCreate, db: firestore.Client = Depends(database.get_db)):
     users_ref = db.collection('users').where('email', '==', user.email).limit(1).stream()
     if next(users_ref, None):
@@ -109,22 +154,71 @@ def register(user: UserCreate, db: firestore.Client = Depends(database.get_db)):
     
     hashed_password = get_password_hash(user.password)
     
-    new_user_data = {
+    # Generate OTP
+    otp = str(random.randint(100000, 999999))
+    expires_at = datetime.now(timezone.utc) + timedelta(minutes=10)
+    
+    pending_user_data = {
         "email": user.email,
         "hashed_password": hashed_password,
         "full_name": user.full_name,
+        "otp": otp,
+        "expires_at": expires_at,
+        "created_at": datetime.now(timezone.utc)
+    }
+    
+    # Check if already in pending and delete old
+    pending_ref = db.collection('pending_users').where('email', '==', user.email).stream()
+    for doc in pending_ref:
+        doc.reference.delete()
+        
+    db.collection('pending_users').add(pending_user_data)
+    
+    send_otp_email(user.email, otp, subject="Trackify - Registration OTP", is_registration=True)
+    
+    return {"message": "OTP sent to email", "dev_otp": otp}
+
+@router.post("/verify-registration-otp", response_model=Token)
+def verify_registration_otp(request: VerifyOTP, db: firestore.Client = Depends(database.get_db)):
+    pending_ref = db.collection('pending_users').where('email', '==', request.email).limit(1).stream()
+    pending_doc = next(pending_ref, None)
+    
+    if not pending_doc:
+        raise HTTPException(status_code=400, detail="Invalid or expired OTP")
+        
+    pending_data = pending_doc.to_dict()
+    
+    if datetime.now(timezone.utc) > pending_data['expires_at']:
+        pending_doc.reference.delete()
+        raise HTTPException(status_code=400, detail="OTP has expired")
+        
+    if request.otp != pending_data['otp']:
+        raise HTTPException(status_code=400, detail="Invalid OTP")
+        
+    # Check if email is already in users (edge case)
+    users_ref = db.collection('users').where('email', '==', request.email).limit(1).stream()
+    if next(users_ref, None):
+        pending_doc.reference.delete()
+        raise HTTPException(status_code=400, detail="Email already registered")
+        
+    # Create the user
+    new_user_data = {
+        "email": pending_data['email'],
+        "hashed_password": pending_data['hashed_password'],
+        "full_name": pending_data['full_name'],
         "google_id": None,
         "is_active": True,
         "created_at": datetime.now(timezone.utc)
     }
     
-    update_time, doc_ref = db.collection('users').add(new_user_data)
+    db.collection('users').add(new_user_data)
+    pending_doc.reference.delete()
     
     access_token = create_access_token(
-        data={"sub": user.email},
+        data={"sub": pending_data['email']},
         expires_delta=timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     )
-    return {"access_token": access_token, "token_type": "bearer", "user": {"email": user.email, "name": user.full_name}}
+    return {"access_token": access_token, "token_type": "bearer", "user": {"email": pending_data['email'], "name": pending_data['full_name']}}
 
 @router.post("/login", response_model=Token)
 def login(user: UserLogin, db: firestore.Client = Depends(database.get_db)):
@@ -227,26 +321,73 @@ def forgot_password(request: ForgotPassword, db: firestore.Client = Depends(data
     
     if not user_doc:
         # We don't want to expose whether a user exists or not
-        return {"message": "If that email is registered, a password reset link has been sent."}
+        return {"message": "If that email is registered, an OTP has been sent."}
     
     user_data = user_doc.to_dict()
     if not user_data.get('is_active', True):
         raise HTTPException(status_code=400, detail="Account is inactive")
         
-    # Generate a short-lived reset token (e.g. 15 minutes)
+    # Generate a 6-digit OTP
+    otp = str(random.randint(100000, 999999))
+    
+    # Store OTP with a 10-minute expiration
+    expires_at = datetime.now(timezone.utc) + timedelta(minutes=10)
+    
+    # Update the user document with the OTP and expiration
+    doc_ref = db.collection('users').document(user_doc.id)
+    doc_ref.update({
+        "reset_otp": otp,
+        "reset_otp_expires_at": expires_at
+    })
+    
+    # Send the email with the OTP
+    send_otp_email(request.email, otp)
+    
+    # Returning the OTP just for demo/dev purposes
+    return {
+        "message": "If that email is registered, an OTP has been sent.",
+        "dev_otp": otp 
+    }
+
+@router.post("/verify-otp")
+def verify_otp(request: VerifyOTP, db: firestore.Client = Depends(database.get_db)):
+    users_ref = db.collection('users').where('email', '==', request.email).limit(1).stream()
+    user_doc = next(users_ref, None)
+    
+    if not user_doc:
+        raise HTTPException(status_code=400, detail="Invalid OTP or email")
+        
+    user_data = user_doc.to_dict()
+    stored_otp = user_data.get("reset_otp")
+    expires_at = user_data.get("reset_otp_expires_at")
+    
+    if not stored_otp or not expires_at:
+        raise HTTPException(status_code=400, detail="Invalid OTP or email")
+        
+    # Check if expired
+    if datetime.now(timezone.utc) > expires_at:
+        raise HTTPException(status_code=400, detail="OTP has expired")
+        
+    # Check if matches
+    if request.otp != stored_otp:
+        raise HTTPException(status_code=400, detail="Invalid OTP")
+        
+    # Generate a short-lived reset token (e.g. 15 minutes) for the reset password step
     reset_token = create_access_token(
         data={"sub": request.email, "type": "password_reset"},
         expires_delta=timedelta(minutes=15)
     )
     
-    # In a real app, send an email here with a link like:
-    # https://yourfrontend.com/reset-password?token=XYZ
-    print(f"Password reset token for {request.email}: {reset_token}")
+    # Clear the OTP
+    doc_ref = db.collection('users').document(user_doc.id)
+    doc_ref.update({
+        "reset_otp": firestore.DELETE_FIELD,
+        "reset_otp_expires_at": firestore.DELETE_FIELD
+    })
     
-    # Returning the token just for demo/dev purposes
     return {
-        "message": "If that email is registered, a password reset link has been sent.",
-        "dev_reset_token": reset_token 
+        "message": "OTP verified successfully",
+        "reset_token": reset_token
     }
 
 @router.post("/reset-password")

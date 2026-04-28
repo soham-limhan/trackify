@@ -6,7 +6,6 @@ import Login from './components/Login';
 import Register from './components/Register';
 import Dashboard from './components/Dashboard';
 import ForgotPassword from './components/ForgotPassword';
-import ResetPassword from './components/ResetPassword';
 import { ThemeProvider } from './contexts/ThemeContext';
 import ThemeToggle from './components/ThemeToggle';
 
@@ -93,7 +92,6 @@ const AnimatedRoutes = () => {
         <Route path="/login" element={<PageWrapper><Login /></PageWrapper>} />
         <Route path="/register" element={<PageWrapper><Register /></PageWrapper>} />
         <Route path="/forgot-password" element={<PageWrapper><ForgotPassword /></PageWrapper>} />
-        <Route path="/reset-password" element={<PageWrapper><ResetPassword /></PageWrapper>} />
         <Route path="/dashboard" element={
           <ErrorBoundary>
             <PageWrapper><Dashboard /></PageWrapper>

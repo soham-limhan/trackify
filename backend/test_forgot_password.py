@@ -23,10 +23,18 @@ def test_forgot_password_flow():
     assert res_forgot.status_code == 200, f"Forgot password failed: {res_forgot.text}"
     
     data = res_forgot.json()
-    token = data.get("dev_reset_token")
-    assert token is not None, "FAILED: No token returned in dev_reset_token field"
+    otp = data.get("dev_otp")
+    assert otp is not None, "FAILED: No OTP returned in dev_otp field"
         
-    print("3. Resetting password...")
+    print("3. Verifying OTP...")
+    res_verify = client.post("/api/auth/verify-otp", json={"email": email, "otp": otp})
+    assert res_verify.status_code == 200, f"Verify OTP failed: {res_verify.text}"
+    
+    verify_data = res_verify.json()
+    token = verify_data.get("reset_token")
+    assert token is not None, "FAILED: No reset token returned after OTP verification"
+    
+    print("4. Resetting password...")
     res_reset = client.post("/api/auth/reset-password", json={
         "token": token,
         "new_password": pwd2
