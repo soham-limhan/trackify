@@ -320,8 +320,7 @@ def forgot_password(request: ForgotPassword, db: firestore.Client = Depends(data
     user_doc = next(users_ref, None)
     
     if not user_doc:
-        # We don't want to expose whether a user exists or not
-        return {"message": "If that email is registered, an OTP has been sent."}
+        raise HTTPException(status_code=404, detail="User does not exist")
     
     user_data = user_doc.to_dict()
     if not user_data.get('is_active', True):
@@ -345,7 +344,7 @@ def forgot_password(request: ForgotPassword, db: firestore.Client = Depends(data
     
     # Returning the OTP just for demo/dev purposes
     return {
-        "message": "If that email is registered, an OTP has been sent.",
+        "message": "OTP has been sent to your email.",
         "dev_otp": otp 
     }
 

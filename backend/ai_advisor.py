@@ -98,8 +98,14 @@ def _build_prompt(transactions_data: List[dict], user_query: Optional[str] = Non
         )
 
     query_section = (
-        f'\nUSER QUESTION: "{user_query}"\n'
-        f'You MUST directly and specifically answer this question in your insights.\n'
+        f'\n=== USER QUESTION ===\n"{user_query}"\n'
+        f'You MUST directly and specifically answer this question in your "summary" and "key_insights".\n'
+        f'CRITICAL RULE: If the user asks about purchasing an item (e.g., iPhone, car, vacation):\n'
+        f'1. Estimate the realistic market price of the item in INR (e.g., iPhone 17 Pro Max is ~Rs. 150,000+).\n'
+        f'2. Compare this estimated price strictly against their current "Net savings" (Rs.{net_savings:,.0f}).\n'
+        f'3. If the item costs more than their current net savings, you MUST explicitly state that they CANNOT afford it right now or next month.\n'
+        f'4. Tell them exactly how much more they need to save, and provide a realistic timeline in months based on their savings rate.\n'
+        f'Do not give false hope; prioritize mathematical reality and strict financial health.\n'
     ) if user_query else ""
 
     # ── Final prompt ─────────────────────────────────────────────────────────
@@ -173,7 +179,12 @@ async def get_ai_financial_advice(
 ) -> Optional[FinancialAdviceSchema]:
     """Non-streaming path — returns a parsed FinancialAdviceSchema."""
     if not transactions_data:
-        return None
+        return FinancialAdviceSchema(
+            summary="There are currently no transactions present on your account",
+            key_insights=[],
+            savings_tips=[],
+            risk_alerts=[]
+        )
 
     prompt = _build_prompt(transactions_data, user_query)
     raw_response_text = ""
@@ -216,7 +227,16 @@ async def stream_ai_financial_advice(
 ) -> AsyncGenerator[str, None]:
     """Streaming path — yields SSE events."""
     if not transactions_data:
-        yield "data: [ERROR] No transactions found\n\n"
+        response_json = json.dumps({
+            "summary": "There are currently no transactions present on your account",
+            "key_insights": [],
+            "savings_tips": [],
+            "risk_alerts": []
+        })
+        # The frontend replaces \n with actual newlines when parsing
+        safe_token = response_json.replace("\n", "\\n")
+        yield f"data: {safe_token}\n\n"
+        yield "data: [DONE]\n\n"
         return
 
     prompt = _build_prompt(transactions_data, user_query)

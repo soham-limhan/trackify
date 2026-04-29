@@ -234,9 +234,11 @@ export default function RiskDebtAnalyzer({ analytics, transactions = [], user })
 
                     <div className="space-y-5">
                         <div className="group">
-                            <label className="block text-xs font-black text-slate-500 uppercase tracking-widest mb-2">Total Debt Amount (₹)</label>
+                            <label className="block text-xs font-black text-slate-500 uppercase tracking-widest mb-1">Total Debt Amount (₹)</label>
+                            <p className="text-[10px] text-slate-400 mb-2 font-medium">How much money do you currently owe in total? (e.g., credit card balance, car loan)</p>
                             <input
                                 type="number"
+                                step="any"
                                 placeholder="100000"
                                 className="w-full px-5 py-3 rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 font-bold focus:ring-4 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all shadow-sm"
                                 value={debtAmount}
@@ -245,9 +247,11 @@ export default function RiskDebtAnalyzer({ analytics, transactions = [], user })
                         </div>
                         <div className="grid grid-cols-2 gap-4">
                             <div className="group">
-                                <label className="block text-xs font-black text-slate-500 uppercase tracking-widest mb-2">Interest Rate (%)</label>
+                                <label className="block text-xs font-black text-slate-500 uppercase tracking-widest mb-1">Interest Rate (%)</label>
+                                <p className="text-[10px] text-slate-400 mb-2 font-medium">The annual interest rate (e.g., 12 for 12%)</p>
                                 <input
                                     type="number"
+                                    step="any"
                                     placeholder="12"
                                     className="w-full px-5 py-3 rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 font-bold focus:ring-4 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all shadow-sm"
                                     value={interestRate}
@@ -255,9 +259,11 @@ export default function RiskDebtAnalyzer({ analytics, transactions = [], user })
                                 />
                             </div>
                             <div className="group">
-                                <label className="block text-xs font-black text-slate-500 uppercase tracking-widest mb-2">Monthly Payment</label>
+                                <label className="block text-xs font-black text-slate-500 uppercase tracking-widest mb-1">Monthly Payment</label>
+                                <p className="text-[10px] text-slate-400 mb-2 font-medium">How much you plan to pay every month</p>
                                 <input
                                     type="number"
+                                    step="any"
                                     placeholder="5000"
                                     className="w-full px-5 py-3 rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 font-bold focus:ring-4 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all shadow-sm"
                                     value={monthlyPayment}
@@ -328,9 +334,11 @@ export default function RiskDebtAnalyzer({ analytics, transactions = [], user })
                     {/* Inputs for Risk */}
                     <div className="grid grid-cols-2 gap-4 mb-8">
                         <div className="group">
-                            <label className="block text-xs font-black text-slate-500 uppercase tracking-widest mb-2">Liquid Savings (₹)</label>
+                            <label className="block text-xs font-black text-slate-500 uppercase tracking-widest mb-1">Liquid Savings (₹)</label>
+                            <p className="text-[10px] text-slate-400 mb-2 font-medium">Money you can access easily right now (e.g., cash, savings account)</p>
                             <input
                                 type="number"
+                                step="any"
                                 placeholder="50000"
                                 className="w-full px-5 py-3 rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 font-bold focus:ring-4 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all shadow-sm"
                                 value={liquidSavings}
@@ -338,9 +346,11 @@ export default function RiskDebtAnalyzer({ analytics, transactions = [], user })
                             />
                         </div>
                         <div className="group">
-                            <label className="block text-xs font-black text-slate-500 uppercase tracking-widest mb-2">Monthly Expenses</label>
+                            <label className="block text-xs font-black text-slate-500 uppercase tracking-widest mb-1">Monthly Expenses (₹)</label>
+                            <p className="text-[10px] text-slate-400 mb-2 font-medium">Your average total spending in a typical month</p>
                             <input
                                 type="number"
+                                step="any"
                                 placeholder="20000"
                                 className="w-full px-5 py-3 rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 font-bold focus:ring-4 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all shadow-sm"
                                 value={monthlyExpenses}

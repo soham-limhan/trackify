@@ -516,9 +516,13 @@ export default function Dashboard() {
         pdf.setFontSize(14);
         pdf.text('Summary', 14, 45);
         pdf.setFontSize(10);
+        
+        const savingsRate = analytics?.total_income ? (((analytics.total_income - (analytics.total_expenses || 0)) / analytics.total_income) * 100).toFixed(1) : null;
+        
         pdf.text(`Total Income: ${formatCurrency(analytics?.total_income)}`, 14, 52);
         pdf.text(`Total Expenses: ${formatCurrency(analytics?.total_expenses)}`, 14, 57);
         pdf.text(`Net Balance: ${formatCurrency(analytics?.total_income - analytics?.total_expenses)}`, 14, 62);
+        pdf.text(`Savings Rate: ${savingsRate !== null ? `${savingsRate}%` : '--'}`, 14, 67);
 
         try {
             const chartsElement = document.getElementById('charts-to-capture');
@@ -527,7 +531,7 @@ export default function Dashboard() {
                 const imgData = canvas.toDataURL('image/png');
                 const imgWidth = pdfWidth - 28;
                 const imgHeight = (canvas.height * imgWidth) / canvas.width;
-                pdf.addImage(imgData, 'PNG', 14, 70, imgWidth, imgHeight);
+                pdf.addImage(imgData, 'PNG', 14, 75, imgWidth, imgHeight);
             }
             
             pdf.addPage();
@@ -584,6 +588,8 @@ export default function Dashboard() {
         }
         return dailyTrendData.slice(-30); // default: last 30 days
     })();
+    const savingsRate = analytics?.total_income ? (((analytics.total_income - (analytics.total_expenses || 0)) / analytics.total_income) * 100).toFixed(1) : null;
+    const isLowSavings = savingsRate !== null && parseFloat(savingsRate) < 30;
 
     return (
         <div className="min-h-screen bg-slate-50 dark:bg-dark-bg transition-colors duration-500">
@@ -632,7 +638,7 @@ export default function Dashboard() {
                     <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-indigo-600/10 rounded-full blur-[120px] -mr-64 -mt-64 animate-pulse"></div>
                     <div className="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-end gap-10">
                         <div>
-                            <p className="text-indigo-400 font-black uppercase tracking-[0.3em] text-[10px] mb-4">Portfolio Insights</p>
+                            <p className="text-indigo-400 font-black uppercase tracking-[0.3em] text-[10px] mb-4">My Dashboard</p>
                             {loadingUser ? (
                                 <div className="space-y-3 mb-4">
                                     <div className="skeleton-dark h-14 w-72 rounded-2xl" />
@@ -676,7 +682,7 @@ export default function Dashboard() {
                         {activeTab === 'overview' && (
                             <div className="space-y-12">
                                 {/* KPI Grid */}
-                                <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
                                     {/* Income */}
                                     <div className="glass-panel rounded-[2.5rem] p-10 border border-slate-200 dark:border-white/5 shadow-xl bg-white/40 dark:bg-dark-card/40 relative group hover:-translate-y-2 transition-transform">
                                         <div className="p-3 bg-emerald-500/10 rounded-2xl text-emerald-500 w-fit mb-6">
@@ -708,6 +714,28 @@ export default function Dashboard() {
                                         {loadingAnalytics
                                             ? <div className="skeleton h-10 w-36 rounded-xl" />
                                             : <p className="text-4xl font-black text-indigo-600 tracking-tighter">{formatCurrency((analytics?.total_income || 0) - (analytics?.total_expenses || 0))}</p>
+                                        }
+                                    </div>
+                                    {/* Savings Rate */}
+                                    <div className={`glass-panel rounded-[2.5rem] p-10 border shadow-xl relative group hover:-translate-y-2 transition-transform ${isLowSavings ? 'border-red-500/50 bg-red-500/5 dark:bg-red-500/10' : 'border-slate-200 dark:border-white/5 bg-white/40 dark:bg-dark-card/40'}`}>
+                                        <div className={`p-3 rounded-2xl w-fit mb-6 ${isLowSavings ? 'bg-red-500/10 text-red-500 animate-[pulse_1s_ease-in-out_infinite]' : 'bg-amber-500/10 text-amber-500'}`}>
+                                            <TrendingUp size={32} />
+                                        </div>
+                                        <h3 className="text-xs font-black text-slate-500 uppercase tracking-widest mb-2">Savings Rate</h3>
+                                        {loadingAnalytics
+                                            ? <div className="skeleton h-10 w-36 rounded-xl" />
+                                            : (
+                                                <div>
+                                                    <p className={`text-4xl font-black tracking-tighter ${isLowSavings ? 'text-red-500 animate-[pulse_1s_ease-in-out_infinite]' : 'text-slate-900 dark:text-white'}`}>
+                                                        {savingsRate !== null ? `${savingsRate}%` : '--'}
+                                                    </p>
+                                                    {isLowSavings && (
+                                                        <p className="text-[10px] text-red-500 mt-3 font-bold uppercase tracking-widest animate-[pulse_1s_ease-in-out_infinite]">
+                                                            Warning: Less than 30%. Save more for better health!
+                                                        </p>
+                                                    )}
+                                                </div>
+                                            )
                                         }
                                     </div>
                                 </div>
@@ -1003,9 +1031,9 @@ export default function Dashboard() {
                                         <table className="w-full text-left">
                                             <thead className="sticky top-0 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md">
                                                 <tr className="text-[10px] font-black uppercase text-slate-400 tracking-widest">
-                                                    <th className="px-10 py-6">Temporal Index</th>
-                                                    <th className="px-10 py-6">Classification</th>
-                                                    <th className="px-10 py-6 text-right">Fiscal Impact</th>
+                                                    <th className="px-10 py-6">Date</th>
+                                                    <th className="px-10 py-6">Category</th>
+                                                    <th className="px-10 py-6 text-right">Amount</th>
                                                 </tr>
                                             </thead>
                                             <tbody className="divide-y divide-slate-100 dark:divide-white/5">
@@ -1241,7 +1269,7 @@ export default function Dashboard() {
                                         </div>
                                         <div className="space-y-4">
                                             <h3 className="text-4xl font-black text-slate-900 dark:text-white tracking-tighter">Strategic Intelligence Ready</h3>
-                                            <p className="text-slate-500 font-bold max-w-sm mx-auto italic">Analyze your fiscal velocity through our local LLM framework to unlock deep-context savings.</p>
+                                            <p className="text-slate-500 font-bold max-w-sm mx-auto italic">Ask our AI for easy-to-understand advice on how to save more money and reach your goals.</p>
                                         </div>
                                         <div className="space-y-6">
                                             <input 
@@ -1268,7 +1296,7 @@ export default function Dashboard() {
                                 <div className="space-y-12">
                                     <div className="glass-panel rounded-[3rem] p-12 border border-slate-200 dark:border-white/5 bg-white/40 dark:bg-dark-card/40 shadow-xl">
                                         <h3 className="text-xl font-black text-slate-900 dark:text-white mb-10 flex items-center gap-4">
-                                            <Target className="text-indigo-600" /> Fiscal Ceiling
+                                            <Target className="text-indigo-600" /> Monthly Budget Limit
                                         </h3>
                                         <form onSubmit={handleBudgetSubmit} className="space-y-6">
                                             <input type="number" required placeholder="Ceiling (₹)" value={budgetLimit} onChange={e => setBudgetLimit(e.target.value)} className="w-full px-8 py-5 rounded-3xl border border-slate-200 dark:border-white/5 font-bold text-slate-900 dark:text-white outline-none ring-2 ring-transparent focus:ring-indigo-600/20" />
@@ -1292,7 +1320,7 @@ export default function Dashboard() {
                                 </div>
 
                                 <div className="lg:col-span-2 glass-panel rounded-[4rem] p-12 bg-white/40 dark:bg-dark-card/40 border border-slate-200 dark:border-white/5 shadow-3xl min-h-[600px]">
-                                    <h3 className="text-3xl font-black text-slate-900 dark:text-white mb-16 tracking-tighter">Active Fiscal Obligations</h3>
+                                    <h3 className="text-3xl font-black text-slate-900 dark:text-white mb-16 tracking-tighter">Recurring Payments</h3>
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
                                         {recurringExpenses.map(re => (
                                             <div key={re.id} className="p-10 rounded-[3rem] bg-white dark:bg-slate-950 border border-slate-200 dark:border-white/5 shadow-2xl relative group overflow-hidden">
