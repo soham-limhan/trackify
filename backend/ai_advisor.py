@@ -274,46 +274,65 @@ async def stream_ai_financial_advice(
         logger.exception(f"Unexpected streaming error: {e}")
         yield f"data: [ERROR] {str(e)}\n\n"
 
-async def get_ai_risk_score(data: dict) -> Optional[dict]:
-    """Generates a JSON risk score based on the user's data."""
-    prompt = (
-        f"You are Trackify AI, a smart personal financial advisor.\n"
-        f"Evaluate the following financial data and return a JSON risk assessment.\n\n"
-        f"=== FINANCIAL DATA ===\n"
-        f"Liquid Savings: Rs.{data.get('liquidSavings', 0)}\n"
-        f"Monthly Expenses: Rs.{data.get('monthlyExpenses', 0)}\n"
-        f"Total Income (all time): Rs.{data.get('totalIncome', 0)}\n"
-        f"Total Expenses (all time): Rs.{data.get('totalExpenses', 0)}\n\n"
-        f"=== OUTPUT INSTRUCTIONS ===\n"
-        f"Return ONLY a JSON object with the following keys:\n"
-        f"1. \"score\": An integer from 0 to 100 representing overall financial health (100 is best).\n"
-        f"2. \"savings_rate_status\": String. E.g., 'Healthy', 'Moderate', 'High Risk', 'Critical'.\n"
-        f"3. \"savings_rate_text\": String. 1-2 sentences analyzing their savings rate (derived from total income vs expenses).\n"
-        f"4. \"emergency_fund_status\": String. E.g., 'Healthy', 'Moderate', 'High Risk', 'Critical'.\n"
-        f"5. \"emergency_fund_text\": String. 1-2 sentences analyzing their emergency fund (liquid savings vs monthly expenses).\n\n"
-        f"=== EXAMPLE OUTPUT ===\n"
-        f"{{\n"
-        f"  \"score\": 65,\n"
-        f"  \"savings_rate_status\": \"Moderate\",\n"
-        f"  \"savings_rate_text\": \"You are saving about 15% of your income, which is okay but could be improved to 20%.\",\n"
-        f"  \"emergency_fund_status\": \"High Risk\",\n"
-        f"  \"emergency_fund_text\": \"Your liquid savings cover less than 1 month of expenses. Aim for a 3-6 month buffer.\"\n"
-        f"}}\n\n"
-        f"Return ONLY the JSON object based on the data above. No additional text."
-    )
-    try:
-        async with httpx.AsyncClient(timeout=60.0) as client:
-            logger.info("Generating AI Risk Score")
-            response = await client.post(
-                OLLAMA_API_URL,
-                json={"model": MODEL_NAME, "prompt": prompt, "stream": False, "format": "json"}
-            )
-            if response.status_code != 200:
-                logger.error(f"Ollama API error: {response.status_code}")
-                return None
-            result = response.json()
-            raw_response_text = result.get("response", "{}")
-            return json.loads(raw_response_text)
-    except Exception as e:
-        logger.exception(f"Error in get_ai_risk_score: {e}")
-        return None
+def get_local_risk_score(data: dict) -> Optional[dict]:
+    """Generates a JSON risk score locally based on basic logic."""
+    liquid_savings = float(data.get('liquidSavings', 0))
+    monthly_expenses = float(data.get('monthlyExpenses', 0))
+    total_income = float(data.get('totalIncome', 0))
+    total_expenses = float(data.get('totalExpenses', 0))
+
+    # 1. Savings Rate Calculation
+    # Formula: (Total Income - Total Expenses) / Total Income
+    if total_income > 0:
+        savings_rate = (total_income - total_expenses) / total_income
+    else:
+        savings_rate = 0.0
+
+    # Max 50 points for savings rate (target: 20% or 0.20)
+    savings_score = min(50, max(0, (savings_rate / 0.20) * 50))
+    
+    if savings_rate >= 0.20:
+        savings_rate_status = "Healthy"
+        savings_rate_text = f"You are saving {savings_rate*100:.1f}% of your income, which meets the 20% recommended minimum."
+    elif savings_rate >= 0.10:
+        savings_rate_status = "Moderate"
+        savings_rate_text = f"You are saving {savings_rate*100:.1f}% of your income. It's okay, but try to aim for 20%."
+    elif savings_rate > 0:
+        savings_rate_status = "High Risk"
+        savings_rate_text = f"You are saving {savings_rate*100:.1f}% of your income. You should reduce discretionary spending."
+    else:
+        savings_rate_status = "Critical"
+        savings_rate_text = "Your expenses are exceeding your income. You are not saving money."
+
+    # 2. Emergency Fund Calculation
+    # Formula: Liquid Savings / Monthly Expenses
+    if monthly_expenses > 0:
+        months_coverage = liquid_savings / monthly_expenses
+    else:
+        months_coverage = 6.0 if liquid_savings > 0 else 0.0
+
+    # Max 50 points for emergency fund (target: 6 months)
+    emergency_score = min(50, max(0, (months_coverage / 6.0) * 50))
+
+    if months_coverage >= 6:
+        emergency_fund_status = "Healthy"
+        emergency_fund_text = f"Your emergency fund covers {months_coverage:.1f} months of expenses, which is excellent."
+    elif months_coverage >= 3:
+        emergency_fund_status = "Moderate"
+        emergency_fund_text = f"Your emergency fund covers {months_coverage:.1f} months. Aim for a 6-month buffer."
+    elif months_coverage >= 1:
+        emergency_fund_status = "High Risk"
+        emergency_fund_text = f"Your emergency fund only covers {months_coverage:.1f} months. Build it to at least 3 months soon."
+    else:
+        emergency_fund_status = "Critical"
+        emergency_fund_text = "Your liquid savings cover less than 1 month of expenses. This is highly risky."
+
+    total_score = int(savings_score + emergency_score)
+
+    return {
+        "score": total_score,
+        "savings_rate_status": savings_rate_status,
+        "savings_rate_text": savings_rate_text,
+        "emergency_fund_status": emergency_fund_status,
+        "emergency_fund_text": emergency_fund_text
+    }

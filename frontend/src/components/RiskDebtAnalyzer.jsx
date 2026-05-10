@@ -9,7 +9,7 @@ import { API_BASE_URL } from '../config';
 export default function RiskDebtAnalyzer({ analytics, transactions = [], user }) {
     const reportRef = useRef(null);
     const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
-    
+
     // Custom Date Range State
     const [reportFromDate, setReportFromDate] = useState('');
     const [reportToDate, setReportToDate] = useState('');
@@ -18,7 +18,7 @@ export default function RiskDebtAnalyzer({ analytics, transactions = [], user })
     const [debtAmount, setDebtAmount] = useState('');
     const [interestRate, setInterestRate] = useState('');
     const [monthlyPayment, setMonthlyPayment] = useState('');
-    
+
     const [debtResult, setDebtResult] = useState(null);
 
     // Risk Analyzer State
@@ -26,7 +26,7 @@ export default function RiskDebtAnalyzer({ analytics, transactions = [], user })
     const [monthlyExpenses, setMonthlyExpenses] = useState('');
     const [aiScoreData, setAiScoreData] = useState(null);
     const [isAnalyzing, setIsAnalyzing] = useState(false);
-    
+
     // Automatically set default monthly expenses if analytics are available
     useEffect(() => {
         if (analytics && analytics.total_expenses > 0 && !monthlyExpenses) {
@@ -53,7 +53,7 @@ export default function RiskDebtAnalyzer({ analytics, transactions = [], user })
 
         const monthsToPayoff = -Math.log(1 - (r * P) / M) / Math.log(1 + r);
         const totalMonths = Math.ceil(monthsToPayoff);
-        
+
         const totalPaid = totalMonths * M;
         const totalInterest = totalPaid - P;
 
@@ -130,7 +130,7 @@ export default function RiskDebtAnalyzer({ analytics, transactions = [], user })
             const pdf = new jsPDF('p', 'mm', 'a4');
             const pdfWidth = pdf.internal.pageSize.getWidth();
             const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
-            
+
             pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
             pdf.save(`risk_debt_report_${new Date().toISOString().split('T')[0]}.pdf`);
         } catch (error) {
@@ -145,8 +145,8 @@ export default function RiskDebtAnalyzer({ analytics, transactions = [], user })
     const filteredTransactions = transactions.filter(t => {
         if (!reportFromDate && !reportToDate) return true;
         const tDate = new Date(t.date).getTime();
-        const fromTime = reportFromDate ? new Date(reportFromDate).setHours(0,0,0,0) : 0;
-        const toTime = reportToDate ? new Date(reportToDate).setHours(23,59,59,999) : Infinity;
+        const fromTime = reportFromDate ? new Date(reportFromDate).setHours(0, 0, 0, 0) : 0;
+        const toTime = reportToDate ? new Date(reportToDate).setHours(23, 59, 59, 999) : Infinity;
         return tDate >= fromTime && tDate <= toTime;
     });
 
@@ -176,11 +176,11 @@ export default function RiskDebtAnalyzer({ analytics, transactions = [], user })
     // Prepare data for report charts
     const pieData = Object.entries(rangeExpensesByCategory).map(([name, value]) => ({ name, value }));
     const PIE_COLORS = ['#6366f1', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4'];
-    
+
     // Mock 10 assessments trend if none exist, ending with current score
     const trendData = [];
     let currentScore = aiScoreData ? aiScoreData.score / 100 : 0.5;
-    for(let i=9; i>=1; i--) {
+    for (let i = 9; i >= 1; i--) {
         trendData.push({ date: 'N/A', score: Math.max(0, Math.min(1, currentScore + (Math.random() * 0.2 - 0.1))) });
     }
     trendData.push({ date: new Date().toISOString().split('T')[0], score: currentScore });
@@ -195,15 +195,15 @@ export default function RiskDebtAnalyzer({ analytics, transactions = [], user })
             <div className="flex flex-col sm:flex-row justify-end items-end sm:items-center gap-4">
                 <div className="flex items-center gap-2 bg-white dark:bg-slate-800 p-2 rounded-xl border border-slate-200 dark:border-white/10 shadow-sm">
                     <span className="text-xs font-bold text-slate-500 uppercase tracking-widest pl-2 hidden sm:block">Report Date:</span>
-                    <input 
-                        type="date" 
+                    <input
+                        type="date"
                         className="bg-transparent text-sm font-medium text-slate-700 dark:text-slate-300 outline-none cursor-pointer"
                         value={reportFromDate}
                         onChange={e => setReportFromDate(e.target.value)}
                     />
                     <span className="text-slate-400 font-bold">to</span>
-                    <input 
-                        type="date" 
+                    <input
+                        type="date"
                         className="bg-transparent text-sm font-medium text-slate-700 dark:text-slate-300 outline-none cursor-pointer pr-2"
                         value={reportToDate}
                         onChange={e => setReportToDate(e.target.value)}
@@ -219,7 +219,7 @@ export default function RiskDebtAnalyzer({ analytics, transactions = [], user })
                 </button>
             </div>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                
+
                 {/* DEBT CALCULATOR */}
                 <div className="glass-panel rounded-[2.5rem] p-10 border border-slate-200 dark:border-white/5 shadow-xl bg-white/40 dark:bg-dark-card/40 relative">
                     <div className="flex items-center gap-4 mb-8">
@@ -327,7 +327,7 @@ export default function RiskDebtAnalyzer({ analytics, transactions = [], user })
                                     {overallScore}
                                 </span>
                             </div>
-                            <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mt-2">AI Score</p>
+                            <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mt-2">Risk Score</p>
                         </div>
                     </div>
 
@@ -405,14 +405,14 @@ export default function RiskDebtAnalyzer({ analytics, transactions = [], user })
                             </div>
                         )}
                     </div>
-                    
+
                 </div>
             </div>
 
             {/* HIDDEN PRINTABLE REPORT LAYOUT */}
             <div style={{ position: 'absolute', top: '-9999px', left: '-9999px', pointerEvents: 'none' }}>
                 <div ref={reportRef} style={{ width: '800px', backgroundColor: '#ffffff', color: '#000000', padding: '40px', fontFamily: 'sans-serif' }}>
-                    
+
                     {/* Header Banner */}
                     <div style={{ backgroundColor: '#1e3a8a', padding: '20px', marginBottom: '30px' }}>
                         <h1 style={{ color: '#ffffff', margin: 0, fontSize: '24px' }}>Trackify - Risk Assessment Report</h1>
@@ -424,7 +424,7 @@ export default function RiskDebtAnalyzer({ analytics, transactions = [], user })
                         <p style={{ margin: '5px 0' }}><strong>User Identity:</strong> {user?.full_name || user?.email || user?.username || 'Trackify User'}</p>
                         <p style={{ margin: '5px 0' }}><strong>Report Period:</strong> {reportFromDate && reportToDate ? `${reportFromDate} to ${reportToDate}` : (reportFromDate ? `From ${reportFromDate}` : (reportToDate ? `Until ${reportToDate}` : 'All Time (Current Snapshot)'))}</p>
                         <p style={{ margin: '5px 0' }}><strong>Generated At:</strong> {new Date().toLocaleString()}</p>
-                        <br/>
+                        <br />
                         <p style={{ margin: '5px 0', fontSize: '16px' }}>
                             <strong>Total Income:</strong> {formatCurrency(rangeIncome)} | <strong>Total Expenses:</strong> {formatCurrency(rangeExpense)}
                         </p>
@@ -454,7 +454,7 @@ export default function RiskDebtAnalyzer({ analytics, transactions = [], user })
                             <div style={{ height: '220px', width: '100%' }}>
                                 <ResponsiveContainer width="100%" height="100%">
                                     <PieChart>
-                                        <Pie data={pieData} cx="50%" cy="50%" outerRadius={70} dataKey="value" label={({name, percent}) => `${name} ${(percent * 100).toFixed(0)}%`} labelLine={false} style={{fontSize: '9px'}}>
+                                        <Pie data={pieData} cx="50%" cy="50%" outerRadius={70} dataKey="value" label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`} labelLine={false} style={{ fontSize: '9px' }}>
                                             {pieData.map((entry, index) => (
                                                 <Cell key={`cell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} />
                                             ))}
